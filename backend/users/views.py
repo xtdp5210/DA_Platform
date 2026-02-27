@@ -7,6 +7,9 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from django.utils.crypto import get_random_string
 
 from .serializers import *
 from .models import *
@@ -86,6 +89,54 @@ class VerifyOTPView(views.APIView):
                 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+class GoogleLoginAPIView(views.APIView):
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        token = request.data.get('id_token')
+        
+        if not token:
+            return Response({"error": "Google id_token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                google_requests.Request(), 
+                settings.GOOGLE_CLIENT_ID
+            )
+
+            email = idinfo['email']
+            first_name = idinfo.get('given_name', '')
+            last_name = idinfo.get('family_name', '')
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                user = User.objects.create_user(
+                    email=email,
+                    password=get_random_string(32) 
+                )
+                
+                user.is_email_verified = True 
+                user.save()
+
+                if hasattr(user, 'company_profile'):
+                    profile = user.company_profile
+                    profile.representative_name = f"{first_name} {last_name}".strip()
+                    profile.save()
+
+            tokens = get_tokens_for_user(user)
+
+            return Response({
+                "message": "Google Login successful.",
+                "tokens": tokens,
+                "email": user.email
+            }, status=status.HTTP_200_OK)
+
+        except ValueError:
+            return Response({"error": "Invalid or expired Google token."}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 class LoginView(views.APIView):
     throttle_classes = [AnonRateThrottle]

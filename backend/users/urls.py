@@ -4,6 +4,7 @@ from .views import *
 urlpatterns = [
     path('register', RegisterUserView.as_view(), name='register'),
     path('login', LoginView.as_view(), name='login'),
+    path('google_login', GoogleLoginAPIView.as_view(), name='google_login'),
     path('verify_otp', VerifyOTPView.as_view(), name='verify_otp'),
 
     path('change_password', ChangePasswordView.as_view(), name='change_password'),
