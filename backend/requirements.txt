@@ -13,3 +13,4 @@ requests
 django-environ
 razorpay
 google-auth
+xhtml2pdf

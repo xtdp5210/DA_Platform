@@ -30,6 +30,10 @@ SECRET_KEY = 'django-insecure-&p#_he7_@vqx3tj4-q(2gq-%72utblx#sr^d-w4@%-xxk%$1k9
 
 DEBUG = env.bool('DEBUG', default=False)
 
+RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
+RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
+RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', default='my_super_secret_webhook_password')
+
 AUTH_USER_MODEL = 'users.CustomUser'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
@@ -52,6 +56,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'users',
+    'exhibitions',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -141,7 +147,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
-
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATIC_URL = 'static/'
 
 CORS_ALLOW_ALL_ORIGINS = True
