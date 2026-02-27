@@ -1,0 +1,11 @@
+Django
+djangorestframework
+djangorestframework-simplejwt
+djangorestframework-simplejwt[crypto]
+django-cors-headers
+django-allauth
+python-decouple
+django-ratelimit
+django-axes
+psycopg2-binary
+requests
