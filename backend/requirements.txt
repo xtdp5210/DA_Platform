@@ -4,8 +4,11 @@ djangorestframework-simplejwt
 djangorestframework-simplejwt[crypto]
 django-cors-headers
 django-allauth
+dj-rest-auth
 python-decouple
 django-ratelimit
 django-axes
 psycopg2-binary
 requests
+django-environ
+razorpay
