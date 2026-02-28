@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import mhaLogo from "../../../Assets/Ministry_of_Home_Affairs_India.svg";
-import meaLogo from "../../../Assets/Ministry_of_External_Affairs_India.svg";
+import mhaLogo from "../../../Assets/Ministry_of_Home_Affairs_India.jpg";
+import meaLogo from "../../../Assets/Ministry_of_External_Affairs_India.jpg";
 import rruLogo from "../../../Assets/Rashtriya_Raksha_University_logo.png";
-import modLogo from "../../../Assets/Ministry_of_Defence_India.svg";
-import drdoLogo from "../../../Assets/drdo.svg";
+import modLogo from "../../../Assets/Ministry_of_Defence_India.jpg";
+import drdoLogo from "../../../Assets/drdo.jpg";
 
 const navLinks = [
-  { label: "Home", href: "#home" },
+  // { label: "Home", href: "#home" },
   { label: "About RRU", href: "#about" },
   { label: "Programme", href: "#programme" },
   { label: "Gallery", href: "#gallery" },
@@ -27,34 +27,56 @@ const logoMap: Record<string, string> = {
 
 function InstitutionLogo({ abbr, full }: { abbr: string; full: string }) {
   return (
-    <div className="flex flex-col items-center gap-1 px-3">
+    <div className="flex flex-col items-center px-0 m-0" style={{gap:0,margin:0}}>
       <div
-        className="w-14 h-14 rounded-full flex items-center justify-center border-2 overflow-hidden"
-        style={{ borderColor: "#dde3ec", backgroundColor: "#f8f9fa" }}
+        className="flex items-center justify-center overflow-hidden"
+        style={{}}
       >
         <img
           src={logoMap[abbr]}
           alt={abbr}
-          style={{ width: "38px", height: "38px", objectFit: "contain" }}
+          style={{
+            width:
+              abbr === "MHA" || abbr === "MEA" || abbr === "MoD"
+                ? "180px"
+                : abbr === "DRDO"
+                ? "90px"
+                : "60px",
+            height:
+              abbr === "MHA" || abbr === "MEA" || abbr === "MoD"
+                ? "120px"
+                : abbr === "DRDO"
+                ? "90px"
+                : "60px",
+            objectFit: "contain",
+            borderRadius: 0,
+            background: "none",
+            boxShadow: "none",
+            display: "block",
+            marginTop: abbr === "MHA" || abbr === "MEA" || abbr === "MoD" ? "-20px" : "0px",
+            marginBottom: abbr === "MHA" || abbr === "MEA" || abbr === "MoD" ? "-20px" : "0px"
+          }}
           onError={(e) => {
             const el = e.currentTarget;
             el.style.display = "none";
             const parent = el.parentElement;
             if (parent) {
               const span = document.createElement("span");
-              span.style.cssText = "font-size:9px;font-weight:700;color:#0A1628;letter-spacing:0.02em;text-align:center";
+              span.style.cssText = "font-size:12px;font-weight:700;color:#0A1628;letter-spacing:0.02em;text-align:center";
               span.textContent = abbr;
               parent.appendChild(span);
             }
           }}
         />
       </div>
-      <span
-        className="text-center hidden md:block"
-        style={{ fontSize: "8px", color: "#444", maxWidth: "80px", lineHeight: "1.2" }}
-      >
-        {full}
-      </span>
+      {abbr === "RRU" && (
+        <span
+          className="text-center hidden md:block"
+          style={{ fontSize: "13px", color: "#444", maxWidth: "120px", lineHeight: "1.2", fontWeight: "bold" }}
+        >
+          {full}
+        </span>
+      )}
     </div>
   );
 }
@@ -86,8 +108,8 @@ export function Header({ onRegister, onLogin }: { onRegister?: () => void; onLog
       >
       {/* Top bar: logos */}
       <div
-        className="w-full py-3"
-        style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e0e0e0" }}
+        className="w-full"
+        style={{ backgroundColor: "#ffffff", borderBottom: "1px solid #e0e0e0", minHeight: "1px", height: "auto" }}
       >
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2">
           <div className="flex-shrink-0">

@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
-
+// Helper function to calculate time left until event
 function getTimeLeft() {
-  const target = new Date("2026-03-16T09:00:00+05:30").getTime();
-  const now = Date.now();
-  const diff = Math.max(0, target - now);
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((diff / (1000 * 60)) % 60);
-  const seconds = Math.floor((diff / 1000) % 60);
+  const eventDate = new Date("2026-03-16T09:00:00+05:30"); // Adjust time as needed
+  const now = new Date();
+  const diff = eventDate.getTime() - now.getTime();
+  const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+  const days = Math.floor(totalSeconds / (3600 * 24));
+  const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
   return { days, hours, minutes, seconds };
 }
+import { useEffect, useState } from "react";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
@@ -22,7 +23,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
           height: "64px",
           backgroundColor: "rgba(194,79,29,0.85)",
           border: "2px solid rgba(201,147,58,0.5)",
-          backdropFilter: "blur(4px)",
+          backdropFilter: "blur(4px)"
         }}
       >
         <span style={{ fontSize: "28px", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
@@ -128,16 +129,12 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
         {/* Badge */}
         <div
           className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
-          style={{
-            border: "1px solid rgba(201,147,58,0.5)",
-            backgroundColor: "rgba(201,147,58,0.12)",
-            backdropFilter: "blur(4px)",
-          }}
+          
         >
-          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#C9933A" }} />
-          <span style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>
+          <div className="w-1.5 h-1.5"/>
+          {/* <span style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>
             EXCLUSIVE HIGH-LEVEL DIPLOMATIC FORUM
-          </span>
+          </span> */}
         </div>
 
         {/* Primary Headline */}
@@ -234,7 +231,7 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
         {/* CTA Buttons */}
         <div className="flex flex-wrap gap-4 justify-center mt-4">
           <button
-            onClick={() => onRegister?.()}
+            onClick={() => window.location.href = "/registerevent"}
             className="px-8 py-4 rounded-lg transition-all duration-300 cursor-pointer"
             style={{
               backgroundColor: "#C24F1D",

@@ -1,0 +1,58 @@
+# =========================
+# Backend (Python / Django)
+# =========================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+myenv/
+venv/
+env/
+
+# Environment Variables
+.env
+.env.local
+
+# Django specific
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+*.log
+
+# =========================
+# Frontend (Node / Vite / React)
+# =========================
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build Output
+dist/
+frontend/dist/
+dist-ssr/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# OS / IDE Specific
+# =========================
+
+# Windows / Mac
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -329,10 +329,8 @@ export function RegistrationPage({ onBack, onLogin }: { onBack: () => void; onLo
               {/* 2. Sector */}
               <div style={{ gridColumn: "1 / -1" }}>
                 <label style={labelStyle}>2. CATEGORY / SECTOR OF PRODUCTION / INNOVATION *</label>
-                <select value={form.sector} onChange={(e) => set("sector", e.target.value)} style={{ ...inputStyle("sector"), appearance: "none" }}>
-                  <option value="">— Select sector —</option>
-                  {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <input value={form.sector} onChange={(e) => set("sector", e.target.value)}
+                  placeholder="Enter your category or sector" style={inputStyle("sector")} />
                 {errors.sector && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.sector}</p>}
               </div>
 
@@ -514,7 +512,6 @@ export function RegistrationPage({ onBack, onLogin }: { onBack: () => void; onLo
         )}
       </div>
 
-      <IndianBorder flip />
     </div>
   );
 }

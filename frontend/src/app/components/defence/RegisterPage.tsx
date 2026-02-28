@@ -1,37 +1,39 @@
 import { useState } from "react";
 import { IndianBorder } from "./IndianBorder";
 
-export function LoginPage({ onBack, onRegister }: { onBack: () => void; onRegister: () => void }) {
-  const [form, setForm] = useState({ email: "", password: "" });
+export function RegisterPage({ onBack }: { onBack: () => void }) {
+  const [form, setForm] = useState({ repName: "", company: "", email: "", phone: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleLogin = async () => {
+  const handleSubmit = async () => {
     const e: Record<string, string> = {};
-    if (!form.email.trim()) e.email = "Required";
-    if (!form.password.trim()) e.password = "Required";
+    if (!form.repName.trim()) e.repName = "Required";
+    if (!form.company.trim()) e.company = "Required";
+    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = "Valid email required";
+    if (!form.phone.trim()) e.phone = "Required";
     setErrors(e);
-    setLoginError("");
+    setErrorMsg("");
     if (Object.keys(e).length === 0) {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:8000/users/login", {
+        const res = await fetch("/api/auth/register/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
         });
         if (res.ok) {
-          // Handle successful login (e.g., redirect, store token)
-          window.location.href = "/";
+          setSuccess(true);
         } else {
           const data = await res.json();
-          setLoginError(data.detail || "Login failed");
+          setErrorMsg(data.detail || "Registration failed");
         }
       } catch (err) {
-        setLoginError("Network error");
+        setErrorMsg("Network error");
       }
       setLoading(false);
     }
@@ -49,30 +51,22 @@ export function LoginPage({ onBack, onRegister }: { onBack: () => void; onRegist
     letterSpacing: "0.08em", display: "block", marginBottom: "6px",
   };
 
-  // ...existing code...
-
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#f9f7f4", display: "flex", flexDirection: "column" }}>
       <IndianBorder sticky />
-
-      {/* Top bar */}
       <div style={{ backgroundColor: "#0A1628", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 600 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           Back to Home
         </button>
         <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>DEFENCE ATTACHÉ ROUNDTABLE 2026</p>
-          <p style={{ color: "#fff", fontSize: "14px", fontWeight: 700 }}>Exhibitor Login</p>
+          <p style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>USER REGISTRATION</p>
+          <p style={{ color: "#fff", fontSize: "14px", fontWeight: 700 }}>Register</p>
         </div>
         <div style={{ width: "120px" }} />
       </div>
-
-      {/* Login card */}
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
         <div style={{ maxWidth: "480px", width: "100%" }}>
-
-          {/* Logo area */}
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <div style={{ width: 64, height: 64, backgroundColor: "#C24F1D", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
@@ -80,72 +74,62 @@ export function LoginPage({ onBack, onRegister }: { onBack: () => void; onRegist
                 <path d="M7 11V7a5 5 0 0110 0v4" />
               </svg>
             </div>
-            <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#0A1628", marginBottom: "6px" }}>Exhibitor Login</h2>
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>Sign in to access your registration details</p>
+            <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#0A1628", marginBottom: "6px" }}>User Registration</h2>
+            <p style={{ color: "#6b7280", fontSize: "14px" }}>Sign up to access the platform</p>
           </div>
-
           <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", border: "1px solid #e5e7eb", boxShadow: "0 4px 24px rgba(10,22,40,0.06)" }}>
-
             <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-              {/* email/Email */}
               <div>
-                <label style={labelStyle}>EMAIL*</label>
-                <input value={form.email} onChange={(e) => set("email", e.target.value)}
-                  placeholder="Enter your email" style={inputStyle("email")}
+                <label style={labelStyle}>NAME OF THE REPRESENTATIVE *</label>
+                <input value={form.repName} onChange={(e) => set("repName", e.target.value)}
+                  placeholder="Your full name" style={inputStyle("repName")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.repName ? "#ef4444" : "#e2e8f0")}
+                />
+                {errors.repName && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.repName}</p>}
+              </div>
+              <div>
+                <label style={labelStyle}>COMPANY NAME *</label>
+                <input value={form.company} onChange={(e) => set("company", e.target.value)}
+                  placeholder="Registered company name" style={inputStyle("company")}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.company ? "#ef4444" : "#e2e8f0")}
+                />
+                {errors.company && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.company}</p>}
+              </div>
+              <div>
+                <label style={labelStyle}>EMAIL ADDRESS *</label>
+                <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
+                  placeholder="official@company.com" style={inputStyle("email")}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = errors.email ? "#ef4444" : "#e2e8f0")}
                 />
                 {errors.email && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.email}</p>}
               </div>
-              {/* Password */}
               <div>
-                <label style={labelStyle}>PASSWORD *</label>
-                <input type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                  placeholder="Enter your password" style={inputStyle("password")}
+                <label style={labelStyle}>PHONE NUMBER *</label>
+                <input value={form.phone} onChange={(e) => set("phone", e.target.value)}
+                  placeholder="+91 XXXXX XXXXX" style={inputStyle("phone")}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.password ? "#ef4444" : "#e2e8f0")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.phone ? "#ef4444" : "#e2e8f0")}
                 />
-                {errors.password && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.password}</p>}
+                {errors.phone && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.phone}</p>}
               </div>
-              {/* Error message */}
-              {loginError && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{loginError}</p>}
+              {errorMsg && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{errorMsg}</p>}
+              {success && <p style={{ color: "#16a34a", fontSize: "13px", marginTop: "8px" }}>Registration successful!</p>}
             </div>
-
-            {/* Login button */}
-            <button onClick={handleLogin} disabled={loading}
+            <button onClick={handleSubmit} disabled={loading}
               style={{ width: "100%", marginTop: "28px", padding: "14px", backgroundColor: loading ? "#9ca3af" : "#C24F1D", color: "#fff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "all 0.2s" }}>
               {loading ? (
                 <>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
                     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  Verifying...
+                  Registering...
                 </>
-              ) : "LOGIN →"}
-            </button>
-            {/* Google OAuth */}
-            <button
-              onClick={() => window.location.href = "http://localhost:8000/users/google_login"}
-              style={{ width: "100%", marginTop: "18px", padding: "12px", backgroundColor: "#fff", color: "#0A1628", border: "2px solid #4285F4", borderRadius: "10px", fontSize: "15px", fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}
-            >
-              <svg width="22" height="22" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.73 1.22 9.24 3.22l6.9-6.9C35.64 2.54 30.13 0 24 0 14.64 0 6.27 5.48 1.98 13.44l8.06 6.27C12.36 13.14 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.5c0-1.54-.14-3.02-.39-4.45H24v8.44h12.44c-.54 2.92-2.18 5.4-4.65 7.08l7.23 5.62C43.73 37.36 46.1 31.36 46.1 24.5z"/><path fill="#FBBC05" d="M10.04 28.71c-1.13-3.36-1.13-6.96 0-10.32l-8.06-6.27C.36 16.36 0 20.09 0 24c0 3.91.36 7.64 1.98 11.88l8.06-6.27z"/><path fill="#EA4335" d="M24 48c6.13 0 11.64-2.02 15.87-5.5l-7.23-5.62c-2.01 1.35-4.59 2.15-8.64 2.15-6.26 0-11.64-3.64-14.02-8.71l-8.06 6.27C6.27 42.52 14.64 48 24 48z"/></g></svg>
-              Continue with Google
-            </button>
-
-            {/* Divider */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "20px 0" }}>
-              <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e7eb" }} />
-              <span style={{ fontSize: "12px", color: "#9ca3af" }}>New exhibitor?</span>
-              <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e7eb" }} />
-            </div>
-
-            <button onClick={onRegister}
-              style={{ width: "100%", padding: "12px", backgroundColor: "#fff", color: "#0A1628", border: "2px solid #0A1628", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em" }}>
-              REGISTER YOUR COMPANY
+              ) : "REGISTER →"}
             </button>
           </div>
-
-          {/* Contact */}
           <p style={{ textAlign: "center", marginTop: "20px", fontSize: "12px", color: "#9ca3af" }}>
             Need help? Email{" "}
             <a href="mailto:Da2026@rru.ac.in" style={{ color: "#C24F1D", fontWeight: 600 }}>Da2026@rru.ac.in</a>
@@ -154,8 +138,7 @@ export function LoginPage({ onBack, onRegister }: { onBack: () => void; onRegist
           </p>
         </div>
       </div>
-
-
+      <IndianBorder flip />
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
