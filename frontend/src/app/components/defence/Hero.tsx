@@ -1,0 +1,296 @@
+import { useEffect, useState } from "react";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
+
+function getTimeLeft() {
+  const target = new Date("2026-03-16T09:00:00+05:30").getTime();
+  const now = Date.now();
+  const diff = Math.max(0, target - now);
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+  return { days, hours, minutes, seconds };
+}
+
+function CountdownUnit({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center px-4 py-3" style={{ minWidth: "72px" }}>
+      <div
+        className="rounded-lg flex items-center justify-center mb-1"
+        style={{
+          width: "64px",
+          height: "64px",
+          backgroundColor: "rgba(194,79,29,0.85)",
+          border: "2px solid rgba(201,147,58,0.5)",
+          backdropFilter: "blur(4px)",
+        }}
+      >
+        <span style={{ fontSize: "28px", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+          {String(value).padStart(2, "0")}
+        </span>
+      </div>
+      <span
+        style={{ fontSize: "9px", fontWeight: 700, color: "#C9933A", letterSpacing: "0.15em" }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export function Hero({ onRegister }: { onRegister?: () => void }) {
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const scrollTo = (href: string) => {
+    const el = document.querySelector(href);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
+  return (
+    <section
+      id="home"
+      className="relative w-full flex items-center justify-center overflow-hidden"
+      style={{ minHeight: "92vh" }}
+    >
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <ImageWithFallback
+          src="https://images.unsplash.com/photo-1696564237711-64c39fda7e85?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWxpdGFyeSUyMGNvbmZlcmVuY2UlMjBzdW1taXQlMjBmbGFnc3xlbnwxfHx8fDE3NzIyMDM0NTR8MA&ixlib=rb-4.1.0&q=80&w=1080"
+          alt="Military Conference"
+          className="w-full h-full object-cover"
+        />
+        {/* Dual overlay: deep navy + terracotta tint */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.78) 50%, rgba(90,30,10,0.65) 100%)",
+          }}
+        />
+      </div>
+
+      {/* Geometric accent lines */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute top-0 left-0 w-full h-1"
+          style={{ background: "linear-gradient(90deg, transparent, #C9933A44, transparent)" }}
+        />
+        <div
+          className="absolute bottom-0 left-0 w-full h-1"
+          style={{ background: "linear-gradient(90deg, transparent, #C24F1D44, transparent)" }}
+        />
+        {/* Decorative diagonal lines */}
+        <svg
+          className="absolute left-0 top-0 opacity-10"
+          width="300"
+          height="300"
+          viewBox="0 0 300 300"
+        >
+          {Array.from({ length: 10 }).map((_, i) => (
+            <line
+              key={i}
+              x1={0}
+              y1={i * 35}
+              x2={i * 35}
+              y2={0}
+              stroke="#C9933A"
+              strokeWidth="1"
+            />
+          ))}
+        </svg>
+        <svg
+          className="absolute right-0 bottom-0 opacity-10 rotate-180"
+          width="300"
+          height="300"
+          viewBox="0 0 300 300"
+        >
+          {Array.from({ length: 10 }).map((_, i) => (
+            <line
+              key={i}
+              x1={0}
+              y1={i * 35}
+              x2={i * 35}
+              y2={0}
+              stroke="#C9933A"
+              strokeWidth="1"
+            />
+          ))}
+        </svg>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center flex flex-col items-center gap-6">
+        {/* Badge */}
+        <div
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full"
+          style={{
+            border: "1px solid rgba(201,147,58,0.5)",
+            backgroundColor: "rgba(201,147,58,0.12)",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#C9933A" }} />
+          <span style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>
+            EXCLUSIVE HIGH-LEVEL DIPLOMATIC FORUM
+          </span>
+        </div>
+
+        {/* Primary Headline */}
+        <div>
+          <h1
+            className="uppercase tracking-widest"
+            style={{
+              fontSize: "clamp(28px, 6vw, 72px)",
+              fontWeight: 900,
+              color: "#ffffff",
+              lineHeight: 1.05,
+              letterSpacing: "0.06em",
+              textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+            }}
+          >
+            Defence Attaché
+            <br />
+            <span style={{ color: "#C9933A" }}>Roundtable</span>
+          </h1>
+          <div
+            className="mt-2 mx-auto"
+            style={{
+              height: "2px",
+              width: "120px",
+              background: "linear-gradient(90deg, transparent, #C24F1D, transparent)",
+            }}
+          />
+          <h2
+            className="mt-4 uppercase tracking-widest"
+            style={{
+              fontSize: "clamp(14px, 3vw, 32px)",
+              fontWeight: 700,
+              color: "#e2e8f0",
+              letterSpacing: "0.12em",
+            }}
+          >
+            & Defence Industry Expo 2026
+          </h2>
+        </div>
+
+        {/* Event Details */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded"
+            style={{ backgroundColor: "rgba(10,22,40,0.7)", border: "1px solid rgba(255,255,255,0.15)" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span style={{ color: "#fff", fontSize: "13px", fontWeight: 600, letterSpacing: "0.05em" }}>
+              16th & 17th March, 2026
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-2 px-4 py-2 rounded"
+            style={{ backgroundColor: "rgba(10,22,40,0.7)", border: "1px solid rgba(255,255,255,0.15)" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C9933A" strokeWidth="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span style={{ color: "#fff", fontSize: "13px", fontWeight: 600, letterSpacing: "0.05em" }}>
+              Gandhinagar, Gujarat, India
+            </span>
+          </div>
+        </div>
+
+        {/* Countdown Timer */}
+        <div className="mt-4">
+          <p style={{ color: "#94a3b8", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", marginBottom: "12px" }}>
+            EVENT BEGINS IN
+          </p>
+          <div
+            className="inline-flex items-center gap-1 rounded-xl px-2"
+            style={{
+              backgroundColor: "rgba(10,22,40,0.7)",
+              border: "1px solid rgba(201,147,58,0.3)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <CountdownUnit value={timeLeft.days} label="DAYS" />
+            <span style={{ color: "#C9933A", fontSize: "24px", fontWeight: 900, marginBottom: "16px" }}>:</span>
+            <CountdownUnit value={timeLeft.hours} label="HOURS" />
+            <span style={{ color: "#C9933A", fontSize: "24px", fontWeight: 900, marginBottom: "16px" }}>:</span>
+            <CountdownUnit value={timeLeft.minutes} label="MINUTES" />
+            <span style={{ color: "#C9933A", fontSize: "24px", fontWeight: 900, marginBottom: "16px" }}>:</span>
+            <CountdownUnit value={timeLeft.seconds} label="SECONDS" />
+          </div>
+        </div>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-wrap gap-4 justify-center mt-4">
+          <button
+            onClick={() => onRegister?.()}
+            className="px-8 py-4 rounded-lg transition-all duration-300 cursor-pointer"
+            style={{
+              backgroundColor: "#C24F1D",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 800,
+              letterSpacing: "0.1em",
+              border: "none",
+              boxShadow: "0 4px 24px rgba(194,79,29,0.5)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = "#a83f18";
+              (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = "#C24F1D";
+              (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+            }}
+          >
+            REGISTER FOR PARTICIPATION
+          </button>
+          <button
+            onClick={() => scrollTo("#programme")}
+            className="px-8 py-4 rounded-lg transition-all duration-300 cursor-pointer"
+            style={{
+              backgroundColor: "transparent",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              border: "2px solid rgba(255,255,255,0.4)",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#C9933A";
+              (e.currentTarget as HTMLElement).style.color = "#C9933A";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.4)";
+              (e.currentTarget as HTMLElement).style.color = "#fff";
+            }}
+          >
+            VIEW PROGRAMME
+          </button>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="mt-8 flex flex-col items-center gap-1 opacity-50">
+          <div
+            className="w-px h-10 rounded"
+            style={{ background: "linear-gradient(to bottom, transparent, #C9933A)" }}
+          />
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="#C9933A">
+            <path d="M0 0l5 6 5-6z" />
+          </svg>
+        </div>
+      </div>
+    </section>
+  );
+}
