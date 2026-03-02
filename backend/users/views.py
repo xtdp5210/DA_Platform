@@ -14,6 +14,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 import logging
 import hmac
+import threading
 
 security_logger = logging.getLogger('backend')
 
@@ -41,16 +42,19 @@ class RegisterUserView(generics.CreateAPIView):
 
         otp = user.otp_verification.generate_otp()
 
-        try:
-            send_mail(
-                subject="Verify your Defense Tech Exhibition Account",
-                message=f"Your verification code is: {otp}. It will expire in 3 minutes.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            security_logger.error("Failed to send OTP email to %s: %s", user.email, e)
+        def _send_otp():
+            try:
+                send_mail(
+                    subject="Verify your Defense Tech Exhibition Account",
+                    message=f"Your verification code is: {otp}. It will expire in 3 minutes.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                security_logger.error("Failed to send OTP email to %s: %s", user.email, e)
+
+        threading.Thread(target=_send_otp, daemon=True).start()
 
         return Response({
             "message": "Registration successful. Please check your email for the OTP.",
@@ -222,14 +226,20 @@ class ForgotPasswordView(views.APIView):
                 user = User.objects.get(email=email)
                 
                 otp = user.otp_verification.generate_otp()
-                
-                send_mail(
-                    subject="Password Reset Code",
-                    message=f"Your password reset code is: {otp}. It will expire in 3 minutes.",
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=True,
-                )
+
+                def _send_reset(u=user, o=otp):
+                    try:
+                        send_mail(
+                            subject="Password Reset Code",
+                            message=f"Your password reset code is: {o}. It will expire in 3 minutes.",
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            recipient_list=[u.email],
+                            fail_silently=True,
+                        )
+                    except Exception as exc:
+                        security_logger.error("Failed to send reset OTP to %s: %s", u.email, exc)
+
+                threading.Thread(target=_send_reset, daemon=True).start()
             except User.DoesNotExist:
                 pass 
 
@@ -293,13 +303,19 @@ class ResendOTPView(views.APIView):
 
             otp = user.otp_verification.generate_otp()
 
-            send_mail(
-                subject="Your New Verification Code",
-                message=f"Your new verification code is: {otp}. It will expire in 3 minutes.",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
+            def _send_resend(u=user, o=otp):
+                try:
+                    send_mail(
+                        subject="Your New Verification Code",
+                        message=f"Your new verification code is: {o}. It will expire in 3 minutes.",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[u.email],
+                        fail_silently=True,
+                    )
+                except Exception as exc:
+                    security_logger.error("Failed to resend OTP to %s: %s", u.email, exc)
+
+            threading.Thread(target=_send_resend, daemon=True).start()
         except User.DoesNotExist:
             pass  # Silently ignore — no account enumeration
 
