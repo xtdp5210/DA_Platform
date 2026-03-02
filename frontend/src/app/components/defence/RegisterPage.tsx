@@ -1,145 +1,172 @@
 import { useState } from "react";
-import { IndianBorder } from "./IndianBorder";
+import { useNavigate, Link } from "react-router-dom";
+import { register } from "../../../api/auth";
 
-export function RegisterPage({ onBack }: { onBack: () => void }) {
-  const [form, setForm] = useState({ repName: "", company: "", email: "", phone: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+// ── Disposable / temp-mail domain blocklist ──────────────────────────────────
+const BLOCKED_DOMAINS = new Set([
+  "mailinator.com", "guerrillamail.com", "guerrillamail.info", "guerrillamail.biz",
+  "guerrillamail.de", "guerrillamail.net", "guerrillamail.org", "guerrillamailblock.com",
+  "grr.la", "sharklasers.com", "spam4.me", "tempmail.com", "temp-mail.org",
+  "10minutemail.com", "10minutemail.net", "throwaway.email", "throwam.com",
+  "yopmail.com", "yopmail.fr", "cool.fr.nf", "jetable.fr.nf", "nospam.ze.tc",
+  "trashmail.com", "trashmail.at", "trashmail.io", "trashmail.me", "trashmail.net",
+  "trashmail.xyz", "trashmail.org", "dispostable.com", "maildrop.cc", "mailnull.com",
+  "spamgourmet.com", "spamgourmet.net", "spamgourmet.org", "bouncr.com",
+  "discard.email", "fakeinbox.com", "mailnesia.com", "spamfree24.org",
+  "wegwerfmail.de", "wegwerfmail.net", "wegwerfmail.org", "mailexpire.com",
+  "spamex.com", "filzmail.com", "spamthisplease.com", "noref.in",
+  "spamevader.com", "mailnull.com", "getairmail.com", "tmailinator.com",
+  "tempinbox.com", "throwam.com", "mt2014.com", "mt2015.com",
+  "dispostable.com", "trashmail.at", "spambob.com", "spamhole.com",
+  "mailzilla.com", "spaml.com", "spamstack.net", "spamsink.net",
+  "objectmail.com", "ownmail.net", "maileater.com", "mailscrap.com",
+  "spamoff.de", "fakemail.net", "supergreatmail.com", "garbagemail.org",
+  "hatespam.org", "ieatspam.eu", "ieatspam.info", "inoutmail.de",
+  "spamgob.com", "spam.la", "thisisnotmyrealemail.com", "fauxmail.com",
+  "mintemail.com", "tempemail.net", "incognitomail.com",
+]);
+
+/** Returns an error string or empty string if valid. */
+function validateEmail(email: string): string {
+  const trimmed = email.trim().toLowerCase();
+  // Basic format check
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) return "Enter a valid email address.";
+  const domain = trimmed.split("@")[1];
+  if (BLOCKED_DOMAINS.has(domain)) return "Temporary / disposable email addresses are not allowed.";
+  return "";
+}
+
+const RegisterPage = () => {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    representative_name: "",  // matches backend field
+    company_name: "",
+    email: "",
+    phone_number: "",         // matches backend field
+    password: "",
+    confirmPassword: "",
+  });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    setError("");
+  };
 
-  const handleSubmit = async () => {
-    const e: Record<string, string> = {};
-    if (!form.repName.trim()) e.repName = "Required";
-    if (!form.company.trim()) e.company = "Required";
-    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = "Valid email required";
-    if (!form.phone.trim()) e.phone = "Required";
-    setErrors(e);
-    setErrorMsg("");
-    if (Object.keys(e).length === 0) {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/auth/register/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-        if (res.ok) {
-          setSuccess(true);
-        } else {
-          const data = await res.json();
-          setErrorMsg(data.detail || "Registration failed");
-        }
-      } catch (err) {
-        setErrorMsg("Network error");
-      }
+  /** Phone: only allow digits, spaces, +, -, () */
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cleaned = e.target.value.replace(/[^\d\s+()\-]/g, "");
+    setForm({ ...form, phone_number: cleaned });
+    setFieldErrors((prev) => ({ ...prev, phone_number: "" }));
+    setError("");
+  };
+
+  const validate = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!form.representative_name.trim()) errs.representative_name = "Full name is required.";
+    if (!form.company_name.trim()) errs.company_name = "Company name is required.";
+    const emailErr = validateEmail(form.email);
+    if (emailErr) errs.email = emailErr;
+    if (!form.phone_number.trim()) errs.phone_number = "Phone number is required.";
+    else if (form.phone_number.replace(/[^\d]/g, "").length < 7) errs.phone_number = "Enter a valid phone number.";
+    if (form.password.length < 8) errs.password = "Password must be at least 8 characters.";
+    if (form.password !== form.confirmPassword) errs.confirmPassword = "Passwords do not match.";
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setLoading(true);
+    setError("");
+    try {
+      await register({
+        representative_name: form.representative_name,
+        company_name: form.company_name,
+        email: form.email,
+        phone_number: form.phone_number,
+        password: form.password,
+      });
+      navigate("/verify-otp", { state: { email: form.email } });
+    } catch (err: any) {
+      const data = err.response?.data;
+      setError(
+        data?.message || data?.email?.[0] || data?.detail ||
+        Object.values(data || {})?.[0]?.[0] ||
+        "Registration failed. Please try again."
+      );
+    } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = (key: string): React.CSSProperties => ({
-    width: "100%", padding: "12px 16px", borderRadius: "10px", fontSize: "14px",
-    border: `1.5px solid ${errors[key] ? "#ef4444" : "#e2e8f0"}`,
-    outline: "none", backgroundColor: "#fff", color: "#0A1628", fontFamily: "inherit",
-    boxSizing: "border-box",
-  });
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: "11px", fontWeight: 700, color: "#374151",
-    letterSpacing: "0.08em", display: "block", marginBottom: "6px",
-  };
-
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f9f7f4", display: "flex", flexDirection: "column" }}>
-      <IndianBorder sticky />
-      <div style={{ backgroundColor: "#0A1628", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 600 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-          Back to Home
-        </button>
-        <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>USER REGISTRATION</p>
-          <p style={{ color: "#fff", fontSize: "14px", fontWeight: 700 }}>Register</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
+          <p className="text-gray-500 mt-2">Register for the exhibition platform</p>
         </div>
-        <div style={{ width: "120px" }} />
-      </div>
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-        <div style={{ maxWidth: "480px", width: "100%" }}>
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div style={{ width: 64, height: 64, backgroundColor: "#C24F1D", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input type="text" name="representative_name" value={form.representative_name} onChange={handleChange} placeholder="John Doe"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.representative_name ? "border-red-500" : "border-gray-200"}`} />
+                {fieldErrors.representative_name && <p className="text-red-500 text-xs mt-1">{fieldErrors.representative_name}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input type="text" name="company_name" value={form.company_name} onChange={handleChange} placeholder="Acme Inc."
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.company_name ? "border-red-500" : "border-gray-200"}`} />
+                {fieldErrors.company_name && <p className="text-red-500 text-xs mt-1">{fieldErrors.company_name}</p>}
+              </div>
             </div>
-            <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#0A1628", marginBottom: "6px" }}>User Registration</h2>
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>Sign up to access the platform</p>
-          </div>
-          <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", border: "1px solid #e5e7eb", boxShadow: "0 4px 24px rgba(10,22,40,0.06)" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div>
-                <label style={labelStyle}>NAME OF THE REPRESENTATIVE *</label>
-                <input value={form.repName} onChange={(e) => set("repName", e.target.value)}
-                  placeholder="Your full name" style={inputStyle("repName")}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.repName ? "#ef4444" : "#e2e8f0")}
-                />
-                {errors.repName && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.repName}</p>}
-              </div>
-              <div>
-                <label style={labelStyle}>COMPANY NAME *</label>
-                <input value={form.company} onChange={(e) => set("company", e.target.value)}
-                  placeholder="Registered company name" style={inputStyle("company")}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.company ? "#ef4444" : "#e2e8f0")}
-                />
-                {errors.company && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.company}</p>}
-              </div>
-              <div>
-                <label style={labelStyle}>EMAIL ADDRESS *</label>
-                <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)}
-                  placeholder="official@company.com" style={inputStyle("email")}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.email ? "#ef4444" : "#e2e8f0")}
-                />
-                {errors.email && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.email}</p>}
-              </div>
-              <div>
-                <label style={labelStyle}>PHONE NUMBER *</label>
-                <input value={form.phone} onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+91 XXXXX XXXXX" style={inputStyle("phone")}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.phone ? "#ef4444" : "#e2e8f0")}
-                />
-                {errors.phone && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.phone}</p>}
-              </div>
-              {errorMsg && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{errorMsg}</p>}
-              {success && <p style={{ color: "#16a34a", fontSize: "13px", marginTop: "8px" }}>Registration successful!</p>}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@company.com"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.email ? "border-red-500" : "border-gray-200"}`} />
+              {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>}
             </div>
-            <button onClick={handleSubmit} disabled={loading}
-              style={{ width: "100%", marginTop: "28px", padding: "14px", backgroundColor: loading ? "#9ca3af" : "#C24F1D", color: "#fff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "all 0.2s" }}>
-              {loading ? (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                  </svg>
-                  Registering...
-                </>
-              ) : "REGISTER →"}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <input type="tel" name="phone_number" value={form.phone_number} onChange={handlePhoneChange} placeholder="+91 98765 43210" inputMode="tel"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.phone_number ? "border-red-500" : "border-gray-200"}`} />
+              {fieldErrors.phone_number && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone_number}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Min. 8 characters"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.password ? "border-red-500" : "border-gray-200"}`} />
+              {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="Repeat password"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${fieldErrors.confirmPassword ? "border-red-500" : "border-gray-200"}`} />
+              {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+            </div>
+            {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg">{error}</div>}
+            <button type="submit" disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition-colors">
+              {loading ? "Creating account..." : "Create Account"}
             </button>
-          </div>
-          <p style={{ textAlign: "center", marginTop: "20px", fontSize: "12px", color: "#9ca3af" }}>
-            Need help? Email{" "}
-            <a href="mailto:Da2026@rru.ac.in" style={{ color: "#C24F1D", fontWeight: 600 }}>Da2026@rru.ac.in</a>
-            {" "}or call{" "}
-            <a href="tel:+919142982258" style={{ color: "#C24F1D", fontWeight: 600 }}>+91-9142982258</a>
+          </form>
+          <p className="text-center text-sm text-gray-500 mt-6">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blue-600 font-medium hover:underline">Sign in</Link>
           </p>
         </div>
       </div>
-      <IndianBorder flip />
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-}
+};
+
+export default RegisterPage;

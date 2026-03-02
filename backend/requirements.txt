@@ -1,4 +1,6 @@
 Django
+django-jazzmin
+whitenoise
 djangorestframework
 djangorestframework-simplejwt
 djangorestframework-simplejwt[crypto]
@@ -14,3 +16,4 @@ django-environ
 razorpay
 google-auth
 xhtml2pdf
+gunicorn

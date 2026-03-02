@@ -3,25 +3,26 @@ const objectives = [
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
         <circle cx="16" cy="16" r="14" stroke="#C24F1D" strokeWidth="2" />
-        <path d="M10 16h12M16 10v12" stroke="#C24F1D" strokeWidth="2" strokeLinecap="round" />
-        <circle cx="16" cy="16" r="4" fill="#C24F1D" opacity="0.2" />
+        <path d="M8 16h5l3-7 3 14 3-7h4" stroke="#C24F1D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    title: "Direct Dialogue on Security",
-    desc: "Facilitate candid, high-level bilateral conversations on shared security challenges, threat landscapes, and collective defence frameworks.",
+    title: "Strengthen International Defence Partnerships",
+    desc: "Strengthen international defence partnerships through trust-based, long-term engagement.",
     color: "#C24F1D",
   },
   {
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect x="4" y="8" width="10" height="16" rx="2" stroke="#0A1628" strokeWidth="2" />
-        <rect x="18" y="8" width="10" height="16" rx="2" stroke="#0A1628" strokeWidth="2" />
-        <path d="M14 16h4" stroke="#0A1628" strokeWidth="2" strokeLinecap="round" />
-        <path d="M14 13l4 3-4 3" fill="#0A1628" />
+        <circle cx="10" cy="10" r="4" stroke="#0A1628" strokeWidth="2" />
+        <circle cx="22" cy="10" r="4" stroke="#0A1628" strokeWidth="2" />
+        <circle cx="16" cy="22" r="4" stroke="#0A1628" strokeWidth="2" />
+        <line x1="14" y1="10" x2="18" y2="10" stroke="#0A1628" strokeWidth="1.5" />
+        <line x1="12" y1="14" x2="14" y2="18" stroke="#0A1628" strokeWidth="1.5" />
+        <line x1="20" y1="14" x2="18" y2="18" stroke="#0A1628" strokeWidth="1.5" />
       </svg>
     ),
-    title: "Technology Transfer",
-    desc: "Explore avenues for co-development, joint production, and transfer of cutting-edge defence technologies under Make in India initiatives.",
+    title: "Facilitate Dialogue Across Stakeholders",
+    desc: "Facilitate dialogue between Defence Attachés, policymakers, academia, and Indian defence industry representatives.",
     color: "#0A1628",
   },
   {
@@ -34,42 +35,33 @@ const objectives = [
         <line x1="4" y1="21" x2="28" y2="21" stroke="#C9933A" strokeWidth="1" strokeDasharray="2 2" />
       </svg>
     ),
-    title: "Global South Partnerships",
-    desc: "Strengthen India's leadership in the Global South by building defence partnerships rooted in sovereignty, mutual respect, and shared progress.",
+    title: "Explore Defence Trade & Collaboration",
+    desc: "Explore opportunities for defence trade, co-development, and technology collaboration.",
     color: "#C9933A",
   },
   {
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <path d="M8 20l4-8 4 6 3-4 5 6" stroke="#C24F1D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="2" y="6" width="28" height="20" rx="3" stroke="#C24F1D" strokeWidth="2" />
+        <rect x="4" y="8" width="10" height="16" rx="2" stroke="#C24F1D" strokeWidth="2" />
+        <rect x="18" y="8" width="10" height="16" rx="2" stroke="#C24F1D" strokeWidth="2" />
+        <path d="M14 16h4" stroke="#C24F1D" strokeWidth="2" strokeLinecap="round" />
+        <path d="M14 13l4 3-4 3" fill="#C24F1D" />
       </svg>
     ),
-    title: "Deeper Bilateral Cooperation",
-    desc: "Identify and activate pathways for deeper bilateral defence cooperation across logistics, intelligence-sharing, and joint military exercises.",
+    title: "Share Practical Policy Perspectives",
+    desc: "Share practical perspectives on policy frameworks, institutional design, industrial integration, and financial models.",
     color: "#C24F1D",
   },
   {
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
         <path d="M16 4l3 6h7l-5.5 4 2 7L16 17l-6.5 4 2-7L6 10h7z" stroke="#0A1628" strokeWidth="2" fill="none" strokeLinejoin="round" />
+        <circle cx="16" cy="16" r="3" fill="#0A1628" opacity="0.3" />
       </svg>
     ),
-    title: "Sovereign Capability",
-    desc: "Showcase India's growing Aatmanirbhar Bharat defence ecosystem — indigenous platforms, systems, and innovations ready for global deployment.",
+    title: "Global South-Centric Cooperation",
+    desc: "Encourage Global South-centric cooperation models that balance national capability with global engagement.",
     color: "#0A1628",
-  },
-  {
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <circle cx="16" cy="16" r="6" stroke="#C9933A" strokeWidth="2" />
-        <path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="#C9933A" strokeWidth="2" strokeLinecap="round" />
-        <path d="M7.5 7.5l2.8 2.8M21.7 21.7l2.8 2.8M24.5 7.5l-2.8 2.8M10.3 21.7l-2.8 2.8" stroke="#C9933A" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-    title: "Global Recognition",
-    desc: "Position India as a premier global defence partner of choice — attracting investment, FDI, and international recognition for Made-in-India platforms.",
-    color: "#C9933A",
   },
 ];
 
@@ -82,7 +74,7 @@ export function Objectives() {
           <div className="flex items-center justify-center gap-3 mb-4">
             <div style={{ width: "40px", height: "2px", backgroundColor: "#C24F1D" }} />
             <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", color: "#C24F1D" }}>
-              CORE OBJECTIVES
+              ROUNDTABLE OBJECTIVES
             </span>
             <div style={{ width: "40px", height: "2px", backgroundColor: "#C24F1D" }} />
           </div>
@@ -94,12 +86,12 @@ export function Objectives() {
               lineHeight: 1.2,
             }}
           >
-            Strategic Outcomes &{" "}
-            <span style={{ color: "#C24F1D" }}>Core Objectives</span>
+            Roundtable{" "}
+            <span style={{ color: "#C24F1D" }}>Objectives</span>
           </h2>
           <p className="mt-4 max-w-2xl mx-auto" style={{ color: "#6b7280", fontSize: "15px", lineHeight: 1.7 }}>
-            The Defence Attaché Roundtable 2026 is engineered around six pillars of strategic
-            engagement — each designed to drive real, tangible outcomes for all participating nations.
+            The Defence Attaché Roundtable 2026 is structured around five core objectives —
+            each designed to build lasting strategic defence partnerships between India and the world.
           </p>
         </div>
 

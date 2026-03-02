@@ -10,6 +10,12 @@ from rest_framework.permissions import IsAuthenticated
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from django.utils.crypto import get_random_string
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+import logging
+import hmac
+
+security_logger = logging.getLogger('backend')
 
 from .serializers import *
 from .models import *
@@ -44,7 +50,7 @@ class RegisterUserView(generics.CreateAPIView):
                 fail_silently=False,
             )
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            security_logger.error("Failed to send OTP email to %s: %s", user.email, e)
 
         return Response({
             "message": "Registration successful. Please check your email for the OTP.",
@@ -71,7 +77,7 @@ class VerifyOTPView(views.APIView):
 
             otp_record = user.otp_verification
 
-            if otp_record.is_valid() and otp_record.otp_code == otp_code:
+            if otp_record.is_valid() and hmac.compare_digest(otp_record.otp_code or '', otp_code):
                 
                 user.is_email_verified = True
                 user.save()
@@ -89,6 +95,20 @@ class VerifyOTPView(views.APIView):
                 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+
+class ProfileView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class GoogleLoginAPIView(views.APIView):
     throttle_classes = [AnonRateThrottle]
@@ -175,8 +195,14 @@ class ChangePasswordView(views.APIView):
             new_password = serializer.validated_data['new_password']
 
             if not user.check_password(old_password):
+                security_logger.warning('Failed password change attempt for user: %s', request.user.email)
                 return Response({"error": "Old password is incorrect."}, status=status.HTTP_400_BAD_REQUEST)
             
+            try:
+                validate_password(new_password, user=user)
+            except ValidationError as e:
+                return Response({"error": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
             user.set_password(new_password)
             user.save()
             return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
@@ -229,7 +255,12 @@ class ResetPasswordView(views.APIView):
 
             otp_record = user.otp_verification
 
-            if otp_record.is_valid() and otp_record.otp_code == otp_code:
+            if otp_record.is_valid() and hmac.compare_digest(otp_record.otp_code or '', otp_code):
+                try:
+                    validate_password(new_password, user=user)
+                except ValidationError as e:
+                    return Response({"error": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
                 user.set_password(new_password)
                 user.save()
                 
@@ -237,6 +268,42 @@ class ResetPasswordView(views.APIView):
                 
                 return Response({"message": "Password reset successfully. You can now log in."}, status=status.HTTP_200_OK)
             else:
+                security_logger.warning('Invalid OTP for password reset: %s', email)
                 return Response({"error": "Invalid or expired OTP."}, status=status.HTTP_400_BAD_REQUEST)
                 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResendOTPView(views.APIView):
+    """Re-send a fresh OTP to the user's email for account verification.
+    Throttled to prevent OTP-spam / enumeration abuse."""
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        email = request.data.get('email', '').strip().lower()
+        if not email:
+            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Always return the same response — never confirm whether an account exists
+        try:
+            user = User.objects.get(email=email)
+
+            if user.is_email_verified:
+                return Response({"message": "Account is already verified. Please log in."}, status=status.HTTP_200_OK)
+
+            otp = user.otp_verification.generate_otp()
+
+            send_mail(
+                subject="Your New Verification Code",
+                message=f"Your new verification code is: {otp}. It will expire in 3 minutes.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except User.DoesNotExist:
+            pass  # Silently ignore — no account enumeration
+
+        return Response(
+            {"message": "If an unverified account exists for that email, a new OTP has been sent."},
+            status=status.HTTP_200_OK
+        )

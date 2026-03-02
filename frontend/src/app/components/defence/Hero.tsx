@@ -1,6 +1,12 @@
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import heroVideo from "../../../Assets/Hero_Section.mp4";
+
+// Static data — defined outside component so it's never re-allocated
+const SVG_LINES = Array.from({ length: 10 }, (_, i) => i);
+
 // Helper function to calculate time left until event
 function getTimeLeft() {
-  const eventDate = new Date("2026-03-16T09:00:00+05:30"); // Adjust time as needed
+  const eventDate = new Date("2026-03-16T09:00:00+05:30");
   const now = new Date();
   const diff = eventDate.getTime() - now.getTime();
   const totalSeconds = Math.max(0, Math.floor(diff / 1000));
@@ -10,10 +16,9 @@ function getTimeLeft() {
   const seconds = totalSeconds % 60;
   return { days, hours, minutes, seconds };
 }
-import { useEffect, useState } from "react";
-import { ImageWithFallback } from "../figma/ImageWithFallback";
 
-function CountdownUnit({ value, label }: { value: number; label: string }) {
+// memo: only re-renders when value or label actually changes (not every second tick)
+const CountdownUnit = memo(function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center px-4 py-3" style={{ minWidth: "72px" }}>
       <div
@@ -21,9 +26,9 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
         style={{
           width: "64px",
           height: "64px",
-          backgroundColor: "rgba(194,79,29,0.85)",
+          // Solid color instead of backdropFilter blur — blur triggers expensive GPU repaint every second
+          backgroundColor: "rgba(194,79,29,0.92)",
           border: "2px solid rgba(201,147,58,0.5)",
-          backdropFilter: "blur(4px)"
         }}
       >
         <span style={{ fontSize: "28px", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
@@ -37,40 +42,101 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
       </span>
     </div>
   );
-}
+});
 
 export function Hero({ onRegister }: { onRegister?: () => void }) {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const scrollTo = (href: string) => {
+  // Loop video:
+  // - Play 0s → 9s (Indian flag appears at 5s)
+  // - At 9s, loop back to 5s to keep showing the flag
+  // - Once 15 real seconds have elapsed since start, restart from 0s
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let startTime = Date.now();
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= 9) {
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (elapsed < 15) {
+          video.currentTime = 5; // replay flag section (5s→9s loop)
+        } else {
+          video.currentTime = 0; // restart full video
+          startTime = Date.now();
+        }
+      }
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.play().catch(() => {});
+
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, []);
+
+  const scrollTo = useCallback((href: string) => {
     const el = document.querySelector(href);
     if (el) el.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   return (
     <section
       id="home"
       className="relative w-full flex items-center justify-center overflow-hidden"
-      style={{ minHeight: "92vh" }}
+      style={{ height: "100vh", minHeight: "600px", contain: "layout paint" }}
     >
-      {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <ImageWithFallback
-          src="https://images.unsplash.com/photo-1696564237711-64c39fda7e85?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWxpdGFyeSUyMGNvbmZlcmVuY2UlMjBzdW1taXQlMjBmbGFnc3xlbnwxfHx8fDE3NzIyMDM0NTR8MA&ixlib=rb-4.1.0&q=80&w=1080"
-          alt="Military Conference"
-          className="w-full h-full object-cover"
+      {/* ── Video Background ── */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <video
+          ref={videoRef}
+          src={heroVideo}
+          muted
+          playsInline
+          preload="auto"
+          className="absolute inset-0 w-full h-full"
+          style={{
+            objectFit: "cover",
+            objectPosition: "center",
+            // Promote video to its own GPU compositor layer — prevents it triggering repaints on other layers
+            transform: "translateZ(0)",
+            willChange: "transform",
+          }}
         />
-        {/* Dual overlay: deep navy + terracotta tint */}
+
+        {/* Layer 1 – light vignette */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(135deg, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.78) 50%, rgba(90,30,10,0.65) 100%)",
+              "radial-gradient(ellipse at center, rgba(0,0,0,0.05) 0%, rgba(5,14,28,0.32) 100%)",
+          }}
+        />
+
+        {/* Layer 2 – bottom fade so countdown/CTA remain readable */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(5,14,28,0.55) 0%, rgba(5,14,28,0.15) 40%, transparent 100%)",
+          }}
+        />
+
+        {/* Layer 3 – very subtle terracotta warmth */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(110deg, rgba(10,22,40,0.22) 0%, transparent 60%, rgba(90,28,8,0.15) 100%)",
           }}
         />
       </div>
@@ -92,16 +158,8 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
           height="300"
           viewBox="0 0 300 300"
         >
-          {Array.from({ length: 10 }).map((_, i) => (
-            <line
-              key={i}
-              x1={0}
-              y1={i * 35}
-              x2={i * 35}
-              y2={0}
-              stroke="#C9933A"
-              strokeWidth="1"
-            />
+          {SVG_LINES.map((i) => (
+            <line key={i} x1={0} y1={i * 35} x2={i * 35} y2={0} stroke="#C9933A" strokeWidth="1" />
           ))}
         </svg>
         <svg
@@ -110,16 +168,8 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
           height="300"
           viewBox="0 0 300 300"
         >
-          {Array.from({ length: 10 }).map((_, i) => (
-            <line
-              key={i}
-              x1={0}
-              y1={i * 35}
-              x2={i * 35}
-              y2={0}
-              stroke="#C9933A"
-              strokeWidth="1"
-            />
+          {SVG_LINES.map((i) => (
+            <line key={i} x1={0} y1={i * 35} x2={i * 35} y2={0} stroke="#C9933A" strokeWidth="1" />
           ))}
         </svg>
       </div>
@@ -215,7 +265,7 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
             style={{
               backgroundColor: "rgba(10,22,40,0.7)",
               border: "1px solid rgba(201,147,58,0.3)",
-              backdropFilter: "blur(8px)",
+              // No backdropFilter — avoids expensive blur repaint on every second tick
             }}
           >
             <CountdownUnit value={timeLeft.days} label="DAYS" />
@@ -232,8 +282,9 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
         <div className="flex flex-wrap gap-4 justify-center mt-4">
           <button
             onClick={() => window.location.href = "/registerevent"}
-            className="px-8 py-4 rounded-lg transition-all duration-300 cursor-pointer"
+            className="px-8 py-4 rounded-lg cursor-pointer"
             style={{
+              transition: "background-color 300ms ease, transform 300ms ease",
               backgroundColor: "#C24F1D",
               color: "#fff",
               fontSize: "13px",
@@ -255,8 +306,9 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
           </button>
           <button
             onClick={() => scrollTo("#programme")}
-            className="px-8 py-4 rounded-lg transition-all duration-300 cursor-pointer"
+            className="px-8 py-4 rounded-lg cursor-pointer"
             style={{
+              transition: "border-color 300ms ease, color 300ms ease",
               backgroundColor: "transparent",
               color: "#fff",
               fontSize: "13px",
@@ -274,6 +326,41 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
             }}
           >
             VIEW PROGRAMME
+          </button>
+
+          {/* Floor Map Button */}
+          <button
+            onClick={() => window.location.href = "/floormap"}
+            className="px-8 py-4 rounded-lg cursor-pointer"
+            style={{
+              transition: "background-color 300ms ease, border-color 300ms ease, transform 300ms ease",
+              backgroundColor: "rgba(201,147,58,0.12)",
+              color: "#C9933A",
+              fontSize: "13px",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              border: "2px solid rgba(201,147,58,0.5)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(201,147,58,0.22)";
+              (e.currentTarget as HTMLElement).style.borderColor = "#C9933A";
+              (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(201,147,58,0.12)";
+              (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,147,58,0.5)";
+              (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+            }}
+          >
+            {/* Grid icon */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+            </svg>
+            FLOOR MAP
           </button>
         </div>
 

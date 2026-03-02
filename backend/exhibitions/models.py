@@ -34,8 +34,14 @@ class ExhibitorRegistration(models.Model):
         ('paid', 'Paid'),
     ]
 
+    APPROVAL_STATUS = [
+        ('pending_review', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exhibition_bookings')
-    stall = models.OneToOneField(Stall, on_delete=models.PROTECT, related_name='booking')
+    stall = models.ForeignKey(Stall, on_delete=models.PROTECT, related_name='booking')
 
     company_name = models.CharField(max_length=255)
     
@@ -51,6 +57,14 @@ class ExhibitorRegistration(models.Model):
     products_featuring = models.TextField()
     
     additional_support = models.TextField(blank=True, null=True)
+
+    approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_STATUS,
+        default='pending_review',
+        db_index=True,
+    )
+    rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for rejection (visible in email to company)")
 
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='unpaid')
     created_at = models.DateTimeField(auto_now_add=True)

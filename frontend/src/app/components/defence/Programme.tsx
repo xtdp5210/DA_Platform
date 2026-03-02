@@ -24,8 +24,8 @@ const day1 = [
     ],
   },
   {
-    time: "Special Address",
-    title: "India's Equitable Cooperation Framework",
+    time: "Roundtable",
+    title: "Defence Attaché Roundtable",
     subtitle: "Stability, Economic Growth, and Technological Parity for Collaborative Growth with Developing Nations",
     type: "session",
     details: [

@@ -1,162 +1,121 @@
 import { useState } from "react";
-import { IndianBorder } from "./IndianBorder";
+import { GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { login as loginApi } from "../../../api/auth";
+import client from "../../../api/client";
+import { useAuth } from "../../../store/authStore";
 
-export function LoginPage({ onBack, onRegister }: { onBack: () => void; onRegister: () => void }) {
+// const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+const LoginPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const from = (location.state as any)?.from?.pathname || "/dashboard";
+
   const [form, setForm] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loginError, setLoginError] = useState("");
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleLogin = async () => {
-    const e: Record<string, string> = {};
-    if (!form.email.trim()) e.email = "Required";
-    if (!form.password.trim()) e.password = "Required";
-    setErrors(e);
-    setLoginError("");
-    if (Object.keys(e).length === 0) {
-      setLoading(true);
-      try {
-        const res = await fetch("http://localhost:8000/users/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-        if (res.ok) {
-          // Handle successful login (e.g., redirect, store token)
-          window.location.href = "/";
-        } else {
-          const data = await res.json();
-          setLoginError(data.detail || "Login failed");
-        }
-      } catch (err) {
-        setLoginError("Network error");
-      }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data } = await loginApi(form);
+      // Backend returns: { message, tokens: { access, refresh } }
+      await login(data.tokens.access, data.tokens.refresh);
+      navigate("/dashboard", { replace: true });
+    } catch (err: any) {
+      setError(
+        err.response?.data?.error ||
+        err.response?.data?.detail ||
+        "Invalid email or password."
+      );
+    } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = (key: string): React.CSSProperties => ({
-    width: "100%", padding: "12px 16px", borderRadius: "10px", fontSize: "14px",
-    border: `1.5px solid ${errors[key] ? "#ef4444" : "#e2e8f0"}`,
-    outline: "none", backgroundColor: "#fff", color: "#0A1628", fontFamily: "inherit",
-    boxSizing: "border-box",
-  });
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: "11px", fontWeight: 700, color: "#374151",
-    letterSpacing: "0.08em", display: "block", marginBottom: "6px",
-  };
-
-  // ...existing code...
-
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f9f7f4", display: "flex", flexDirection: "column" }}>
-      <IndianBorder sticky />
-
-      {/* Top bar */}
-      <div style={{ backgroundColor: "#0A1628", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 600 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-          Back to Home
-        </button>
-        <div style={{ textAlign: "center" }}>
-          <p style={{ color: "#C9933A", fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em" }}>DEFENCE ATTACHÉ ROUNDTABLE 2026</p>
-          <p style={{ color: "#fff", fontSize: "14px", fontWeight: 700 }}>Exhibitor Login</p>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#f9f7f4', minHeight: '100vh' }}>
+      <div className="max-w-sm w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
+          <p className="text-gray-500 mt-2">Sign in to your account</p>
         </div>
-        <div style={{ width: "120px" }} />
-      </div>
-
-      {/* Login card */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-        <div style={{ maxWidth: "480px", width: "100%" }}>
-
-          {/* Logo area */}
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div style={{ width: 64, height: 64, backgroundColor: "#C24F1D", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => { setForm({ ...form, email: e.target.value }); setError(""); }}
+                required
+                placeholder="you@company.com"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <h2 style={{ fontSize: "24px", fontWeight: 800, color: "#0A1628", marginBottom: "6px" }}>Exhibitor Login</h2>
-            <p style={{ color: "#6b7280", fontSize: "14px" }}>Sign in to access your registration details</p>
-          </div>
-
-          <div style={{ backgroundColor: "#fff", borderRadius: "16px", padding: "32px", border: "1px solid #e5e7eb", boxShadow: "0 4px 24px rgba(10,22,40,0.06)" }}>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-              {/* email/Email */}
-              <div>
-                <label style={labelStyle}>EMAIL*</label>
-                <input value={form.email} onChange={(e) => set("email", e.target.value)}
-                  placeholder="Enter your email" style={inputStyle("email")}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.email ? "#ef4444" : "#e2e8f0")}
-                />
-                {errors.email && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.email}</p>}
+            <div>
+              <div className="flex justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700">Password</label>
+                <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">Forgot password?</Link>
               </div>
-              {/* Password */}
-              <div>
-                <label style={labelStyle}>PASSWORD *</label>
-                <input type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                  placeholder="Enter your password" style={inputStyle("password")}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#C24F1D")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = errors.password ? "#ef4444" : "#e2e8f0")}
-                />
-                {errors.password && <p style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px" }}>{errors.password}</p>}
-              </div>
-              {/* Error message */}
-              {loginError && <p style={{ color: "#ef4444", fontSize: "12px", marginTop: "8px" }}>{loginError}</p>}
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => { setForm({ ...form, password: e.target.value }); setError(""); }}
+                required
+                placeholder="Enter your password"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-
-            {/* Login button */}
-            <button onClick={handleLogin} disabled={loading}
-              style={{ width: "100%", marginTop: "28px", padding: "14px", backgroundColor: loading ? "#9ca3af" : "#C24F1D", color: "#fff", border: "none", borderRadius: "10px", fontSize: "15px", fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.08em", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "all 0.2s" }}>
-              {loading ? (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                  </svg>
-                  Verifying...
-                </>
-              ) : "LOGIN →"}
-            </button>
-            {/* Google OAuth */}
+            {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg">{error}</div>}
             <button
-              onClick={() => window.location.href = "http://localhost:8000/users/google_login"}
-              style={{ width: "100%", marginTop: "18px", padding: "12px", backgroundColor: "#fff", color: "#0A1628", border: "2px solid #4285F4", borderRadius: "10px", fontSize: "15px", fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition-colors"
             >
-              <svg width="22" height="22" viewBox="0 0 48 48"><g><path fill="#4285F4" d="M24 9.5c3.54 0 6.73 1.22 9.24 3.22l6.9-6.9C35.64 2.54 30.13 0 24 0 14.64 0 6.27 5.48 1.98 13.44l8.06 6.27C12.36 13.14 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.1 24.5c0-1.54-.14-3.02-.39-4.45H24v8.44h12.44c-.54 2.92-2.18 5.4-4.65 7.08l7.23 5.62C43.73 37.36 46.1 31.36 46.1 24.5z"/><path fill="#FBBC05" d="M10.04 28.71c-1.13-3.36-1.13-6.96 0-10.32l-8.06-6.27C.36 16.36 0 20.09 0 24c0 3.91.36 7.64 1.98 11.88l8.06-6.27z"/><path fill="#EA4335" d="M24 48c6.13 0 11.64-2.02 15.87-5.5l-7.23-5.62c-2.01 1.35-4.59 2.15-8.64 2.15-6.26 0-11.64-3.64-14.02-8.71l-8.06 6.27C6.27 42.52 14.64 48 24 48z"/></g></svg>
-              Continue with Google
+              {loading ? "Signing in..." : "Sign In"}
             </button>
+          </form>
 
-            {/* Divider */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "20px 0" }}>
-              <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e7eb" }} />
-              <span style={{ fontSize: "12px", color: "#9ca3af" }}>New exhibitor?</span>
-              <div style={{ flex: 1, height: "1px", backgroundColor: "#e5e7eb" }} />
-            </div>
-
-            <button onClick={onRegister}
-              style={{ width: "100%", padding: "12px", backgroundColor: "#fff", color: "#0A1628", border: "2px solid #0A1628", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: "pointer", letterSpacing: "0.06em" }}>
-              REGISTER YOUR COMPANY
-            </button>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+            <div className="relative flex justify-center text-sm"><span className="bg-white px-3 text-gray-400">or</span></div>
           </div>
 
-          {/* Contact */}
-          <p style={{ textAlign: "center", marginTop: "20px", fontSize: "12px", color: "#9ca3af" }}>
-            Need help? Email{" "}
-            <a href="mailto:Da2026@rru.ac.in" style={{ color: "#C24F1D", fontWeight: 600 }}>Da2026@rru.ac.in</a>
-            {" "}or call{" "}
-            <a href="tel:+919142982258" style={{ color: "#C24F1D", fontWeight: 600 }}>+91-9142982258</a>
+          <GoogleLogin
+            onSuccess={credentialResponse => {
+              axios.post(`${client.defaults.baseURL}/users/google_login`, {
+                id_token: credentialResponse.credential
+              }).then(res => {
+                // handle login success (store tokens, redirect, etc.)
+                if (res.data.tokens) {
+                  login(res.data.tokens.access, res.data.tokens.refresh);
+                  navigate('/dashboard', { replace: true });
+                } else {
+                  setError("Google login failed.");
+                }
+              }).catch(err => {
+                setError("Google login failed.");
+              });
+            }}
+            onError={() => {
+              setError("Google login failed.");
+            }}
+            width="100%"
+          />
+
+          <p className="text-center text-sm text-gray-500 mt-6">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-blue-600 font-medium hover:underline">Create one</Link>
           </p>
         </div>
       </div>
-
-
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
-}
+};
+
+export default LoginPage;

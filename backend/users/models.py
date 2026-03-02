@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-import random
+import secrets
 from datetime import timedelta
 
 
@@ -64,7 +64,8 @@ class OTPVerification(models.Model):
     expires_at = models.DateTimeField(blank=True, null=True)
 
     def generate_otp(self):
-        self.otp_code = str(random.randint(100000, 999999))
+        # secrets.randbelow is cryptographically secure (unlike random.randint)
+        self.otp_code = str(secrets.randbelow(900000) + 100000)
         self.created_at = timezone.now()
         self.expires_at = self.created_at + timedelta(minutes=3)
         self.save()

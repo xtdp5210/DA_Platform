@@ -1,92 +1,51 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import img1 from "../../../Assets/066A6616.JPG";
+import img2 from "../../../Assets/066A6619.JPG";
+import img3 from "../../../Assets/066A6640.JPG";
+import img4 from "../../../Assets/066A6648.JPG";
+import img5 from "../../../Assets/066A6652.JPG";
+import img6 from "../../../Assets/066A6666.JPG";
+import img7 from "../../../Assets/066A6713.JPG";
 
 const photos = [
-  {
-    src: "https://images.unsplash.com/photo-1596700209466-85b32a38ab5a?w=1200&q=80",
-    caption: "Inaugural Ceremony — Defence Attaché Roundtable 2026",
-    tag: "Ceremony",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200&q=80",
-    caption: "Keynote Address — India's Defence Vision 2030",
-    tag: "Keynote",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=1200&q=80",
-    caption: "Session I — Policy Reforms & Global Integration",
-    tag: "Session",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1591696331111-ef9586a5b17a?w=1200&q=80",
-    caption: "Indigenous Defence Exposition — Live Demonstrations",
-    tag: "Exposition",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80",
-    caption: "Networking Dinner — Defence Leadership",
-    tag: "Networking",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1200&q=80",
-    caption: "B2B Meetings — Procurement & Co-development",
-    tag: "Business",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80",
-    caption: "Start-up Pitch Sessions — iDEX Innovators",
-    tag: "Innovation",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?w=1200&q=80",
-    caption: "School & Laboratory Visits — RRU Lavad Campus",
-    tag: "Campus",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&q=80",
-    caption: "Defence Attachés in Bilateral Discussions",
-    tag: "Diplomacy",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=1200&q=80",
-    caption: "Company Showcases — DPSU Live Demonstrations",
-    tag: "Industry",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=1200&q=80",
-    caption: "High-Level Panel Discussion — Strategic Cooperation",
-    tag: "Panel",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&q=80",
-    caption: "Drone Technology Showcase — Autonomous Systems",
-    tag: "Technology",
-  },
+  { src: img1, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
+  { src: img2, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
+  { src: img3, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
+  { src: img4, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
+  { src: img5, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
+  { src: img6, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
+  { src: img7, caption: "Defence Attaché Roundtable — RRU 2026", tag: "Gallery" },
 ];
 
-const THUMB_VISIBLE = 6;
+const THUMB_VISIBLE = 7;
 
 export function PhotoGallery() {
   const [active, setActive] = useState(0);
   const [thumbStart, setThumbStart] = useState(0);
   const [lightbox, setLightbox] = useState<number | null>(null);
-  const [fade, setFade] = useState(true);
+  // Track which images have finished loading so we can show skeleton until ready
+  const [loaded, setLoaded] = useState<boolean[]>(Array(photos.length).fill(false));
 
   const goTo = useCallback(
     (idx: number) => {
-      setFade(false);
-      setTimeout(() => {
-        setActive(idx);
-        setFade(true);
-        // Scroll thumbs so active is visible
-        if (idx >= thumbStart + THUMB_VISIBLE) setThumbStart(idx - THUMB_VISIBLE + 1);
-        else if (idx < thumbStart) setThumbStart(idx);
-      }, 180);
+      setActive(idx);
+      if (idx >= thumbStart + THUMB_VISIBLE) setThumbStart(idx - THUMB_VISIBLE + 1);
+      else if (idx < thumbStart) setThumbStart(idx);
     },
     [thumbStart]
   );
 
   const prev = () => goTo((active - 1 + photos.length) % photos.length);
   const next = () => goTo((active + 1) % photos.length);
+
+  const markLoaded = useCallback((idx: number) => {
+    setLoaded((prev) => {
+      if (prev[idx]) return prev;
+      const next = [...prev];
+      next[idx] = true;
+      return next;
+    });
+  }, []);
 
   // Keyboard nav
   useEffect(() => {
@@ -105,6 +64,13 @@ export function PhotoGallery() {
 
   return (
     <section id="gallery" className="w-full py-20" style={{ backgroundColor: "#f9f7f4" }}>
+      {/* Shimmer animation */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="flex items-end justify-between mb-10">
@@ -134,31 +100,61 @@ export function PhotoGallery() {
           </div>
         </div>
 
-        {/* Main viewer */}
-        <div className="relative rounded-2xl overflow-hidden mb-4" style={{ aspectRatio: "16/7" }}>
-          {/* Image */}
-          <img
-            src={photos[active].src}
-            alt={photos[active].caption}
+        {/* Main viewer — all images stacked, only active one is visible */}
+        <div
+          className="relative rounded-2xl overflow-hidden mb-4"
+          style={{ aspectRatio: "16/7", backgroundColor: "#1a2a40" }}
+        >
+          {/* Shimmer skeleton shown while active image is still decoding */}
+          <div
             style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: fade ? 1 : 0,
-              transition: "opacity 0.18s ease",
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(90deg, #1a2a40 25%, #243550 50%, #1a2a40 75%)",
+              backgroundSize: "200% 100%",
+              animation: loaded[active] ? "none" : "shimmer 1.4s infinite",
+              opacity: loaded[active] ? 0 : 1,
+              transition: "opacity 0.3s ease",
+              zIndex: 0,
             }}
           />
+
+          {/* All images pre-rendered, toggled via opacity for zero-flicker navigation */}
+          {photos.map((photo, idx) => (
+            <img
+              key={idx}
+              src={photo.src}
+              alt={photo.caption}
+              decoding="async"
+              fetchPriority={idx === 0 ? "high" : "low"}
+              onLoad={() => markLoaded(idx)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+                opacity: idx === active ? 1 : 0,
+                transition: "opacity 0.35s ease",
+                zIndex: idx === active ? 1 : 0,
+                willChange: "opacity",
+              }}
+            />
+          ))}
 
           {/* Gradient overlay */}
           <div
             className="absolute inset-0"
             style={{
               background: "linear-gradient(to top, rgba(10,22,40,0.75) 0%, transparent 50%)",
+              zIndex: 2,
+              pointerEvents: "none",
             }}
           />
 
           {/* Caption */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 flex items-end justify-between">
+          <div className="absolute bottom-0 left-0 right-0 p-6 flex items-end justify-between" style={{ zIndex: 3 }}>
             <div>
               <span
                 className="inline-block px-2 py-1 rounded mb-2"
@@ -206,12 +202,7 @@ export function PhotoGallery() {
               key={dir}
               onClick={action}
               className={`absolute top-1/2 -translate-y-1/2 ${side} w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200`}
-              style={{
-                backgroundColor: "rgba(10,22,40,0.65)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                backdropFilter: "blur(8px)",
-                color: "#fff",
-              }}
+              style={{ zIndex: 4, backgroundColor: "rgba(10,22,40,0.65)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", color: "#fff" }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = "#C24F1D";
                 (e.currentTarget as HTMLElement).style.borderColor = "#C24F1D";
@@ -228,7 +219,7 @@ export function PhotoGallery() {
           ))}
 
           {/* Progress bar */}
-          <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: "rgba(255,255,255,0.15)" }}>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: "rgba(255,255,255,0.15)", zIndex: 3 }}>
             <div
               style={{
                 height: "100%",
@@ -279,6 +270,8 @@ export function PhotoGallery() {
                   <img
                     src={photo.src}
                     alt={photo.caption}
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: "100%",
                       height: "100%",

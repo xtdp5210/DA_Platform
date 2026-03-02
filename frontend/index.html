@@ -4,7 +4,18 @@
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Build it</title>
+      <!--
+        Content-Security-Policy (meta fallback).
+        The canonical CSP is set by the API server / reverse-proxy as an HTTP
+        response header. This meta tag acts as a second layer for static-host
+        deployments that cannot inject HTTP headers.
+        NOTE: frame-ancestors cannot be set via meta tag; it MUST come from the
+        HTTP header (already set by Django SecurityHeadersMiddleware).
+      -->
+      <meta http-equiv="Content-Security-Policy"
+            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' https://api.razorpay.com https://checkout.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com;" />
+      <meta name="referrer" content="strict-origin-when-cross-origin" />
+      <title>Defence Attaché Roundtable 2026 — Exhibitor Portal</title>
     </head>
 
     <body>

@@ -15,6 +15,10 @@ from pathlib import Path
 import environ
 import os
 
+# Disable automatic trailing-slash redirects — the API URLs have no trailing
+# slashes and the 301 would break POST requests via some clients.
+APPEND_SLASH = False
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,22 +30,24 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&p#_he7_@vqx3tj4-q(2gq-%72utblx#sr^d-w4@%-xxk%$1k9'
+SECRET_KEY = env('SECRET_KEY')  # Must be set in .env — never hardcode
 
 DEBUG = env.bool('DEBUG', default=False)
 
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
-RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', default='my_super_secret_webhook_password')
+RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET')  # No default — must be set in .env
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',              # Must be before django.contrib.admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +56,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'axes',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -62,14 +70,17 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serves static files efficiently
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',  # Must come after AuthenticationMiddleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'backend.middleware.SecurityHeadersMiddleware',  # Permissions-Policy + CSP
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -109,6 +120,11 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD'),
         'HOST': env('DB_HOST'),
         'PORT': env('DB_PORT'),
+        # Neon requires SSL + channel binding (SCRAM authentication security)
+        'OPTIONS': {
+            'sslmode': env('DB_SSLMODE', default='require'),
+            'channel_binding': env('DB_CHANNEL_BINDING', default='require'),
+        },
     }
 }
 
@@ -150,8 +166,16 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-CORS_ALLOW_ALL_ORIGINS = True
+# --- CORS ---
+# Only allow explicitly listed origins; never use CORS_ALLOW_ALL_ORIGINS = True in production.
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'http://localhost:5173',  # Vite dev server — remove in production
+])
+CORS_ALLOW_CREDENTIALS = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -165,6 +189,15 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    # In production only serve JSON — never expose the Browsable API HTML interface
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ] if not DEBUG else [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    # Hide internal error details from API consumers in production
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle'
@@ -185,17 +218,204 @@ SIMPLE_JWT = {
 
 SITE_ID = 1
 
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
-
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 # ACCOUNT_EMAIL_REQUIRED = True
 # ACCOUNT_USERNAME_REQUIRED = False
 # ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# ---------------------------------------------------------------------------
+# HTTPS / Security Headers (apply when behind SSL in production)
+# ---------------------------------------------------------------------------
+SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)  # Set True in production
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0)  # Set 31536000 in production
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = 'DENY'
+
+# Referrer-Policy — never leak the Referer header to third-party sites
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Permissions-Policy — deny access to sensitive browser APIs we do not use
+# Injected via a lightweight custom middleware defined below (Django has no
+# built-in setting for this header).
+PERMISSIONS_POLICY = (
+    "camera=(), microphone=(), geolocation=(), payment=(), "
+    "usb=(), screen-wake-lock=()"
+)
+
+# Content-Security-Policy — restrict script/style/font origins
+# Adjust 'script-src' / 'style-src' once you know your CDN origins.
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "font-src 'self' data:; "
+    "img-src 'self' data: blob:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none';"
+)
+
+# ---------------------------------------------------------------------------
+# django-axes (Brute-Force Protection)
+# ---------------------------------------------------------------------------
+AXES_FAILURE_LIMIT = 5                    # Lock after 5 failed attempts
+AXES_COOLOFF_TIME = timedelta(hours=1)    # Lockout lasts 1 hour (must be timedelta)
+AXES_LOCKOUT_CALLABLE = None              # Use default 403 response
+AXES_RESET_ON_SUCCESS = True     # Clear failure count on successful login
+AXES_ENABLE_ADMIN = True
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',  # Must be first
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# ---------------------------------------------------------------------------
+# Security Logging
+# On Render free tier the filesystem is ephemeral so we always log to stdout.
+# Render captures stdout and makes it available in the dashboard log stream.
+# On a paid/self-hosted server you can add a FileHandler pointed at logs/.
+# ---------------------------------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'axes': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'backend': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Jazzmin Admin Theme
+# ---------------------------------------------------------------------------
+JAZZMIN_SETTINGS = {
+    # Title shown in the browser tab and admin header
+    'site_title': 'DA Platform Admin',
+    'site_header': 'Defence Attaché Platform',
+    'site_brand': 'DA Platform',
+    'welcome_sign': 'Welcome to DA Platform — Restricted Access',
+    'copyright': 'RRU Defence Attaché Roundtable 2026',
+
+    # Logo / icon (using Font Awesome icons bundled with jazzmin)
+    'site_logo': None,
+    'site_icon': None,
+    'site_logo_classes': 'img-circle',
+
+    # Top navigation  links
+    'topmenu_links': [
+        {'name': 'Home', 'url': 'admin:index', 'permissions': ['auth.view_user']},
+        {'name': 'View Site', 'url': '/', 'new_window': True},
+    ],
+
+    # User menu links (top-right)
+    'usermenu_links': [
+        {'name': 'Support', 'url': 'mailto:da@rru.ac.in', 'new_window': True, 'icon': 'fas fa-envelope'},
+    ],
+
+    # Sidebar settings
+    'show_sidebar': True,
+    'navigation_expanded': True,
+    'hide_apps': [],
+    'hide_models': [],
+    'order_with_respect_to': ['users', 'exhibitions', 'payments', 'auth', 'axes'],
+
+    # Icons per app / model (Font Awesome 5)
+    'icons': {
+        'auth':                          'fas fa-shield-alt',
+        'auth.group':                    'fas fa-users-cog',
+        'users.customuser':              'fas fa-user-tie',
+        'users.companyprofile':          'fas fa-building',
+        'users.otpverification':         'fas fa-key',
+        'exhibitions.stall':             'fas fa-store',
+        'exhibitions.exhibitorregistration': 'fas fa-id-badge',
+        'payments.payment':              'fas fa-credit-card',
+        'axes.accessattempt':            'fas fa-ban',
+        'axes.accessfailurelog':         'fas fa-exclamation-triangle',
+        'axes.accesslog':                'fas fa-history',
+        'token_blacklist.blacklistedtoken': 'fas fa-times-circle',
+        'token_blacklist.outstandingtoken': 'fas fa-ticket-alt',
+        'socialaccount.socialaccount':   'fas fa-globe',
+        'socialaccount.socialapp':       'fas fa-plug',
+        'socialaccount.socialtoken':     'fas fa-exchange-alt',
+    },
+    'default_icon_parents': 'fas fa-chevron-circle-right',
+    'default_icon_children': 'fas fa-circle',
+
+    # UI Tweaks
+    'related_modal_active': True,
+    'custom_css': None,
+    'custom_js': None,
+    'use_google_fonts_cdn': True,
+    'show_ui_builder': False,
+    'changeform_format': 'horizontal_tabs',
+    'changeform_format_overrides': {
+        'auth.user': 'collapsible',
+        'auth.group': 'vertical_tabs',
+    },
+}
+
+JAZZMIN_UI_TWEAKS = {
+    'navbar_small_text': False,
+    'footer_small_text': False,
+    'body_small_text': False,
+    'brand_small_text': False,
+    'brand_colour': 'navbar-dark',
+    'accent': 'accent-primary',
+    'navbar': 'navbar-dark',
+    'no_navbar_border': True,
+    'navbar_fixed': True,
+    'layout_boxed': False,
+    'footer_fixed': False,
+    'sidebar_fixed': True,
+    'sidebar': 'sidebar-dark-primary',
+    'sidebar_nav_small_text': False,
+    'sidebar_disable_expand': False,
+    'sidebar_nav_child_indent': True,
+    'sidebar_nav_compact_style': False,
+    'sidebar_nav_legacy_style': False,
+    'sidebar_nav_flat_style': False,
+    'theme': 'flatly',
+    'dark_mode_theme': 'darkly',
+    'button_classes': {
+        'primary': 'btn-primary',
+        'secondary': 'btn-outline-secondary',
+        'info': 'btn-info',
+        'warning': 'btn-warning',
+        'danger': 'btn-danger',
+        'success': 'btn-success',
+    },
+    'actions_sticky_top': True,
+}
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {

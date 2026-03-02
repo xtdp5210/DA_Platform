@@ -1,28 +1,49 @@
+import { useState } from "react";
+
 interface Company {
   id: number;
   name: string;
   description: string;
   initials: string;
   color: string;
+  logo?: string;
 }
 
 const companies: Company[] = [
-  { id: 1, name: "Tata Advanced Systems Ltd.", initials: "TASL", color: "#C24F1D", description: "Indian aerospace and defence manufacturer focused on integrated platforms and advanced systems." },
-  { id: 2, name: "Larsen & Toubro Defence", initials: "L&T", color: "#0A1628", description: "Delivers land, naval, and strategic defence solutions with strong indigenous engineering capability." },
-  { id: 3, name: "Hindustan Aeronautics Ltd.", initials: "HAL", color: "#1e3a5f", description: "Leading aerospace PSU supporting aircraft design, production, and life-cycle sustainment." },
-  { id: 4, name: "Bharat Electronics Ltd.", initials: "BEL", color: "#C9933A", description: "Specialises in defence electronics, radars, communication systems, and command networks." },
-  { id: 5, name: "Mahindra Defence Systems", initials: "MDS", color: "#2563eb", description: "Provides mission-ready mobility, armored systems, and defence manufacturing solutions." },
-  { id: 6, name: "Bharat Forge Ltd.", initials: "BFL", color: "#0f766e", description: "Builds artillery and advanced forgings for defence platforms and critical weapon systems." },
-  { id: 7, name: "BEML Limited", initials: "BEML", color: "#4b5563", description: "Supplies land systems and heavy platforms for defence and strategic mobility needs." },
-  { id: 8, name: "Adani Defence & Aerospace", initials: "ADA", color: "#7c3aed", description: "Develops aerospace, unmanned, and defence solutions aligned with Atmanirbhar Bharat goals." },
-  { id: 9, name: "Safran India Pvt. Ltd.", initials: "SFR", color: "#1d4ed8", description: "Global propulsion and aerospace technology company with expanding defence partnerships in India." },
-  { id: 10, name: "Thales India Pvt. Ltd.", initials: "THL", color: "#7c2d12", description: "Supports avionics, sensors, and secure systems across air, land, and maritime defence domains." },
-  { id: 11, name: "BAE Systems India", initials: "BAE", color: "#111827", description: "International defence major engaged in combat systems and strategic industrial collaborations." },
-  { id: 12, name: "BrahMos Aerospace Pvt. Ltd.", initials: "BMAL", color: "#9333ea", description: "Joint venture known for high-precision supersonic missile technology and strategic deterrence." },
-  { id: 13, name: "Kalyani Strategic Systems", initials: "KSSL", color: "#b45309", description: "Focuses on artillery systems, munitions, and next-generation land warfare solutions." },
-  { id: 14, name: "IdeaForge Technology Ltd.", initials: "IDEA", color: "#dc2626", description: "Drone technology company offering unmanned aerial systems for surveillance and security." },
-  { id: 15, name: "Solar Industries India", initials: "SII", color: "#0f766e", description: "Develops energetics, explosives, and ammunition solutions for defence applications." },
-  { id: 16, name: "Yantra India Ltd.", initials: "YIL", color: "#374151", description: "Manufacturing enterprise supporting ordnance and defence production for armed forces." },
+  { id: 1,  name: "Larsen & Toubro Ltd",                     initials: "L&T",  color: "#0A1628", logo: "https://logo.clearbit.com/lt.com",                      description: "Delivers land, naval, and strategic defence solutions with strong indigenous engineering capability." },
+  { id: 2,  name: "Pixxel India",                            initials: "PIXXL", color: "#7c3aed", logo: "https://logo.clearbit.com/pixxel.space",                description: "Space-tech start-up building Earth observation satellites and hyperspectral imagery solutions." },
+  { id: 3,  name: "Shreeram Aerospace and Defence",          initials: "SAD",  color: "#C24F1D", description: "Aerospace and defence engineering firm focused on precision components and structural solutions." },
+  { id: 4,  name: "Unique Forge",                            initials: "UF",   color: "#0f766e", description: "Precision forging manufacturer supplying critical components for defence and industrial sectors." },
+  { id: 5,  name: "Tata Advanced Systems Limited",           initials: "TASL", color: "#C24F1D", logo: "https://logo.clearbit.com/tataadvancedsystems.com",      description: "Indian aerospace and defence manufacturer focused on integrated platforms and advanced systems." },
+  { id: 6,  name: "Heliocentric Precision Pvt. Ltd.",        initials: "HPPL", color: "#1e3a5f", description: "Precision engineering company specialising in high-accuracy components for aerospace applications." },
+  { id: 7,  name: "Arnobot",                                 initials: "ARN",  color: "#7c2d12", description: "Robotics and automation start-up developing intelligent systems for defence and industrial use." },
+  { id: 8,  name: "Virtual Caim",                            initials: "VC",   color: "#2563eb", description: "Technology company offering virtual simulation and AI-driven defence training platforms." },
+  { id: 9,  name: "Snas IoT",                                initials: "SNAS", color: "#0f766e", description: "IoT solutions provider delivering connected sensor networks for defence and security applications." },
+  { id: 10, name: "Swasemi",                                 initials: "SWS",  color: "#4b5563", description: "Semiconductor and electronic systems company contributing to indigenous defence electronics." },
+  { id: 11, name: "Solvisor",                                initials: "SOL",  color: "#b45309", description: "Defence advisory and technology firm providing analytical and operational decision-support tools." },
+  { id: 12, name: "Mobisec",                                 initials: "MOB",  color: "#dc2626", description: "Cybersecurity company specialising in mobile device security for defence and government use." },
+  { id: 13, name: "Achuk",                                   initials: "ACH",  color: "#9333ea", description: "Defence-focused start-up developing innovative solutions for border surveillance and security." },
+  { id: 14, name: "The Moe",                                 initials: "MOE",  color: "#374151", description: "Deep-tech venture building advanced materials and engineering solutions for defence platforms." },
+  { id: 15, name: "Optimized Electrotech",                   initials: "OET",  color: "#1d4ed8", description: "Electrical and electronics solutions company serving defence and critical infrastructure sectors." },
+  { id: 16, name: "MD Metalline",                            initials: "MDM",  color: "#6b7280", description: "Metal fabrication and precision machining enterprise supporting defence supply chains." },
+  { id: 17, name: "Beyondata",                               initials: "BYD",  color: "#0f766e", logo: "https://logo.clearbit.com/beyondata.com",                description: "Data analytics and intelligence platform providing actionable insights for defence operations." },
+  { id: 18, name: "Vikas Geosensing",                        initials: "VGS",  color: "#7c3aed", description: "Geospatial technology company offering remote sensing and earth observation services." },
+  { id: 19, name: "Chetna Kiran",                            initials: "CK",   color: "#C24F1D", description: "Defence and security solutions provider focused on women-led innovation in the sector." },
+  { id: 20, name: "Allied Engineering",                      initials: "AE",   color: "#0A1628", description: "Engineering services firm specialising in defence-grade mechanical and structural solutions." },
+  { id: 21, name: "Quantum Fort",                            initials: "QF",   color: "#1e3a5f", description: "Quantum computing and cybersecurity company building next-generation defence security systems." },
+  { id: 22, name: "Cligent Aerospace",                       initials: "CLIG", color: "#2563eb", description: "Aerospace engineering start-up developing unmanned platforms and avionics systems." },
+  { id: 23, name: "Bing Bang Boom Solutions",                initials: "BBBS", color: "#dc2626", description: "Innovation-driven defence solutions provider offering rapid prototyping and technology integration." },
+  { id: 24, name: "Technotrove",                             initials: "TECH", color: "#b45309", description: "Technology company focusing on indigenous defence product development and R&D services." },
+  { id: 25, name: "Eyerov",                                  initials: "EYE",  color: "#0f766e", logo: "https://logo.clearbit.com/eyerov.com",                   description: "Underwater robotics company building remotely operated vehicles for naval and security operations." },
+  { id: 26, name: "Laghu Griha Udyog",                       initials: "LGU",  color: "#374151", description: "Micro-enterprise collective contributing to defence component manufacturing under Make in India." },
+  { id: 27, name: "GCCI",                                    initials: "GCCI", color: "#C9933A", description: "Gujarat Chamber of Commerce and Industry fostering defence-industrial partnerships and MSME growth." },
+  { id: 28, name: "Army Design Bureau",                      initials: "ADB",  color: "#0A1628", description: "Indian Army's in-house design organisation driving indigenous defence R&D and procurement." },
+  { id: 29, name: "Zen Technologies",                        initials: "ZEN",  color: "#1d4ed8", logo: "https://logo.clearbit.com/zentechnologies.com",           description: "Combat training simulation company providing realistic training systems for armed forces." },
+  { id: 30, name: "MG Seating Systems Pvt. Ltd.",            initials: "MGSS", color: "#4b5563", description: "Specialised seating manufacturer supplying ergonomic and mission-critical seats for defence vehicles." },
+  { id: 31, name: "A-1 Fence",                               initials: "A1F",  color: "#7c2d12", description: "Perimeter security solutions company providing advanced fencing for defence installations." },
+  { id: 32, name: "Optimised Electrotech",                   initials: "OELT", color: "#0f766e", description: "Electronic systems integrator delivering optimised power and control solutions for defence platforms." },
+  { id: 33, name: "TVS FOSS",                                initials: "FOSS", color: "#C24F1D", description: "Open-source software solutions provider supporting digital transformation in defence operations." },
+  { id: 34, name: "Observe/eSec",                            initials: "OBS",  color: "#111827", description: "Cybersecurity and electronic surveillance company offering threat monitoring for critical defence assets." },
 ];
 
 export function SponsorsSection() {
@@ -78,11 +99,10 @@ export function SponsorsSection() {
   );
 }
 
-function CompanyCard({
-  company,
-}: {
-  company: Company;
-}) {
+function CompanyCard({ company }: { company: Company }) {
+  const [logoError, setLogoError] = useState(false);
+  const showLogo = !!company.logo && !logoError;
+
   return (
     <div
       className="rounded-xl p-5 flex flex-col items-center gap-4 transition-all duration-200"
@@ -92,12 +112,25 @@ function CompanyCard({
       }}
     >
       <div
-        className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: company.color + "22", border: `1.5px solid ${company.color}66` }}
+        className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+        style={
+          showLogo
+            ? { backgroundColor: "#fff", border: "1.5px solid #e5e7eb", padding: "6px" }
+            : { backgroundColor: company.color + "22", border: `1.5px solid ${company.color}66` }
+        }
       >
-        <span style={{ fontSize: "11px", fontWeight: 800, color: company.color, letterSpacing: "0.03em", textAlign: "center" }}>
-          {company.initials}
-        </span>
+        {showLogo ? (
+          <img
+            src={company.logo}
+            alt={company.name + " logo"}
+            onError={() => setLogoError(true)}
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
+        ) : (
+          <span style={{ fontSize: "11px", fontWeight: 800, color: company.color, letterSpacing: "0.03em", textAlign: "center" }}>
+            {company.initials}
+          </span>
+        )}
       </div>
 
       <div className="text-center">

@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from .models import *
 
 User = get_user_model()
@@ -21,6 +23,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'password', 'company_name', 'representative_name', 'phone_number']
 
+    def validate_password(self, value):
+        """Run all AUTH_PASSWORD_VALIDATORS before the user is created."""
+        try:
+            validate_password(value)
+        except ValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        return value
+
     def create(self, validated_data):
         profile_data = validated_data.pop('company_profile', {})
         
@@ -37,6 +47,23 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         
         return user
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source='company_profile.company_name')
+    representative_name = serializers.CharField(source='company_profile.representative_name')
+    phone_number = serializers.CharField(source='company_profile.phone_number')
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'company_name', 'representative_name', 'phone_number', 'is_email_verified']
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('company_profile', {})
+        profile = instance.company_profile
+        for attr, value in profile_data.items():
+            setattr(profile, attr, value)
+        profile.save()
+        instance.save()
+        return instance
 
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()

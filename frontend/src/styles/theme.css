@@ -1,5 +1,16 @@
 @custom-variant dark (&:is(.dark *));
 
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeSpeed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 :root {
   --font-size: 16px;
   --background: #ffffff;

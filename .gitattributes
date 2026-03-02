@@ -1,0 +1,41 @@
+# Force shell scripts and Python files to always use LF line endings on all
+# platforms (required for scripts that run on Linux servers like Render).
+# Windows developers will get CRLF locally but git will normalize to LF on push.
+
+# Default — auto-detect text files
+* text=auto
+
+# Shell scripts — must be LF on the server (Linux/Render)
+*.sh text eol=lf
+
+# Python — LF everywhere
+*.py text eol=lf
+
+# Config / data formats — LF
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.toml text eol=lf
+*.cfg  text eol=lf
+*.ini  text eol=lf
+*.txt  text eol=lf
+*.md   text eol=lf
+*.env.example text eol=lf
+
+# TypeScript / JavaScript — LF
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+
+# Binary files — never touch line endings
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.mp4  binary
+*.pdf  binary
+*.pyc  binary

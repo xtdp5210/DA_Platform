@@ -112,7 +112,7 @@ export function Footer({ onRegister }: { onRegister?: () => void }) {
             </h4>
 
             <a
-              href="mailto:Da2026@rru.ac.in"
+              href="mailto:da2026@rru.ac.in"
               className="flex items-center gap-3 mb-5 group"
               style={{ textDecoration: "none" }}
             >
@@ -129,13 +129,13 @@ export function Footer({ onRegister }: { onRegister?: () => void }) {
                 <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "10px", fontWeight: 600, letterSpacing: "0.1em" }}>
                   EMAIL
                 </p>
-                <p style={{ color: "#fff", fontSize: "15px", fontWeight: 700 }}>Da2026@rru.ac.in</p>
+                <p style={{ color: "#fff", fontSize: "15px", fontWeight: 700 }}>da2026@rru.ac.in</p>
               </div>
             </a>
 
             <a
               href="tel:+919142982258"
-              className="flex items-center gap-3"
+              className="flex items-center gap-3 mb-3"
               style={{ textDecoration: "none" }}
             >
               <div
@@ -150,13 +150,40 @@ export function Footer({ onRegister }: { onRegister?: () => void }) {
                 <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "10px", fontWeight: 600, letterSpacing: "0.1em" }}>
                   CONTACT
                 </p>
-                <p style={{ color: "#fff", fontSize: "15px", fontWeight: 700 }}>+91-9142982258</p>
+                <p style={{ color: "#fff", fontSize: "14px", fontWeight: 700 }}>+91-9142982258</p>
+                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "13px", fontWeight: 600 }}>+91-80002 22724</p>
+              </div>
+            </a>
+
+            {/* Website */}
+            <a
+              href="https://defenceattacheroundtable.rru.ac.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 mb-5"
+              style={{ textDecoration: "none" }}
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)" }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+                </svg>
+              </div>
+              <div>
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "10px", fontWeight: 600, letterSpacing: "0.1em" }}>
+                  WEBSITE
+                </p>
+                <p style={{ color: "#fff", fontSize: "12px", fontWeight: 600 }}>defenceattacheroundtable.rru.ac.in</p>
               </div>
             </a>
 
             {/* Quick register */}
             <a
-              href="mailto:Da2026@rru.ac.in?subject=Registration%20Enquiry%20-%20Defence%20Attaché%20Roundtable%202026"
+              href="mailto:da2026@rru.ac.in?subject=Registration%20Enquiry%20-%20Defence%20Attach%C3%A9%20Roundtable%202026"
               className="mt-6 inline-block px-6 py-3 rounded-xl w-full text-center transition-all duration-200"
               style={{
                 backgroundColor: "rgba(255,255,255,0.15)",

@@ -1,15 +1,14 @@
 from rest_framework import views, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
 import razorpay
-from django.core.mail import EmailMessage
 import json
-from rest_framework.permissions import AllowAny
-from exhibitions.models import *
-from .models import *
-from .serializers import *
-from .utils import *
+from exhibitions.models import ExhibitorRegistration, Stall
+from exhibitions.email_utils import send_payment_confirmed_email
+from .models import Payment
+from .serializers import CreateOrderSerializer, VerifyPaymentSerializer
+from .utils import generate_receipt_pdf
 
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
@@ -28,6 +27,12 @@ class CreateOrderView(views.APIView):
 
             if registration.payment_status == 'paid':
                 return Response({"error": "This registration is already paid."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if registration.approval_status != 'approved':
+                return Response(
+                    {"error": "Your registration is currently under review. Payment will be enabled once the organising team approves your application."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
             amount_in_inr = registration.stall.price
             amount_in_paise = int(amount_in_inr * 100)
@@ -74,7 +79,10 @@ class VerifyPaymentView(views.APIView):
             razorpay_signature = serializer.validated_data['razorpay_signature']
 
             try:
-                payment = Payment.objects.get(razorpay_order_id=razorpay_order_id)
+                payment = Payment.objects.get(
+                    razorpay_order_id=razorpay_order_id,
+                    registration__user=request.user,  # Broken Access Control fix: enforce ownership
+                )
             except Payment.DoesNotExist:
                 return Response({"error": "Invalid Order ID"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -107,26 +115,36 @@ class VerifyPaymentView(views.APIView):
             stall.status = 'booked'
             stall.save()
 
+            # Generate PDF in memory only — never write to disk.
+            # Render's free tier uses an ephemeral filesystem: any file saved to
+            # disk is wiped on the next redeploy, making stored URLs permanently
+            # broken. The PDF is delivered exclusively via email attachment.
             pdf_file = generate_receipt_pdf(payment)
-            
-            if pdf_file:
-                payment.receipt_pdf.save(pdf_file.name, pdf_file, save=True)
 
-                try:
-                    email_msg = EmailMessage(
-                        subject='Payment Receipt - Defence Industry Expo 2026',
-                        body=f"Dear {registration.representative_name},\n\nThank you for your payment. Your Stall {stall.stall_number} (Block {stall.block}) has been successfully booked.\n\nPlease find your official receipt attached.\n\nRegards,\nRRU Defence Attaché Roundtable Team",
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=[registration.contact_email, request.user.email],
+            try:
+                from django.core.mail import EmailMultiAlternatives
+                send_payment_confirmed_email(registration, receipt_url=None)
+                if pdf_file:
+                    to_emails = list({registration.contact_email, request.user.email})
+                    attach_msg = EmailMultiAlternatives(
+                        subject="📎 Your Official Receipt — Defence Attaché Roundtable 2026",
+                        body=(
+                            f"Dear {registration.representative_name},\n\n"
+                            "Please find your official stall booking receipt attached.\n\n"
+                            "Regards,\nOrganising Secretariat\nDefence Attaché Roundtable 2026"
+                        ),
+                        from_email=f"Defence Attaché Roundtable 2026 <{settings.DEFAULT_FROM_EMAIL}>",
+                        to=to_emails,
                     )
-                    email_msg.attach(pdf_file.name, pdf_file.read(), 'application/pdf')
-                    email_msg.send(fail_silently=True)
-                except Exception as e:
-                    print(f"Failed to send receipt email: {e}")
+                    attach_msg.attach(pdf_file.name, pdf_file.read(), "application/pdf")
+                    attach_msg.send(fail_silently=True)
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error("Payment receipt email failed: %s", e)
 
             return Response({
                 "message": "Payment successful! Stall officially booked and receipt emailed.",
-                "receipt_url": request.build_absolute_uri(payment.receipt_pdf.url) if payment.receipt_pdf else None
+                "receipt_url": None   # No persistent disk on free Render — delivered via email
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -172,7 +190,25 @@ class RazorpayWebhookView(views.APIView):
 
                     pdf_file = generate_receipt_pdf(payment)
                     if pdf_file:
-                        payment.receipt_pdf.save(pdf_file.name, pdf_file, save=True)
+                        # Email-only — no disk write (ephemeral filesystem on Render free)
+                        try:
+                            from django.core.mail import EmailMultiAlternatives
+                            to_emails = list({registration.contact_email})
+                            attach_msg = EmailMultiAlternatives(
+                                subject="📎 Your Official Receipt — Defence Attaché Roundtable 2026",
+                                body=(
+                                    f"Dear {registration.representative_name},\n\n"
+                                    "Your payment has been confirmed. Receipt is attached.\n\n"
+                                    "Regards,\nOrganising Secretariat\nDefence Attaché Roundtable 2026"
+                                ),
+                                from_email=f"Defence Attaché Roundtable 2026 <{settings.DEFAULT_FROM_EMAIL}>",
+                                to=to_emails,
+                            )
+                            attach_msg.attach(pdf_file.name, pdf_file.read(), "application/pdf")
+                            attach_msg.send(fail_silently=True)
+                        except Exception as e:
+                            import logging
+                            logging.getLogger(__name__).error("Webhook receipt email failed: %s", e)
 
             except Payment.DoesNotExist:
                 pass 

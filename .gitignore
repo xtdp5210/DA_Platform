@@ -12,9 +12,12 @@ myenv/
 venv/
 env/
 
-# Environment Variables
+# Environment Variables — block ALL .env variants except .env.example
 .env
 .env.local
+.env.production
+.env.staging
+.env.*.local
 
 # Django specific
 db.sqlite3
@@ -22,6 +25,7 @@ db.sqlite3
 media/
 staticfiles/
 *.log
+backend/logs/*.log
 
 # =========================
 # Frontend (Node / Vite / React)

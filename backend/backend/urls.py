@@ -21,7 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('manage-rru-portal/', admin.site.urls),  # Obscured from default /admin/
     path('users/', include('users.urls')),
     path('exhibitions/', include('exhibitions.urls')),
     path('payments/', include('payments.urls')),

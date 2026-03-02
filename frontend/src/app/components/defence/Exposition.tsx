@@ -1,23 +1,22 @@
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 const highlights = [
-  "Live showcases from India's top indigenous defence companies",
-  "Direct engagement with Company CEOs and technical leadership",
-  "Hands-on demonstrations of weapon systems, drones & electronics",
-  "Private sector OEMs, DPSUs, and iDEX start-ups under one roof",
-  "Export-ready platforms demonstrated with live capability briefs",
-  "One-on-one meeting facilitation with company representatives",
+  "Exhibit innovation-driven defence solutions with direct engagement and visibility among key defence stakeholders and global partners",
+  "Align product portfolios with evolving global defence requirements",
+  "Demonstrate technological maturity and scalable manufacturing competence",
+  "Explore long-term collaboration in technology development, co-production, and capability enhancement",
+  "B2B interaction opportunities with direct engagement with officials & international delegates",
+  "Dedicated exhibition space with high-footfall visibility and institutional branding exposure",
 ];
 
 const companies = [
-  "Hindustan Aeronautics Limited (HAL)",
-  "Bharat Electronics Limited (BEL)",
-  "BEML Limited",
-  "Larsen & Toubro Defence",
-  "Tata Advanced Systems",
-  "Mahindra Defence Systems",
-  "Bharat Forge",
-  "iDEX Innovators",
+  "Defence Manufacturers",
+  "Arms & Ammunition Suppliers",
+  "Defence Technology & Surveillance Companies",
+  "Cyber Security & Strategic Solution Providers",
+  "Startups & MSMEs",
+  "Tactical Equipment & Gear Providers",
+  "Research & Innovation Institutions",
 ];
 
 export function Exposition() {
@@ -90,7 +89,7 @@ export function Exposition() {
                     <p style={{ color: "#fff", fontSize: "13px", fontWeight: 600 }}>
                       Rashtriya Raksha University, Gandhinagar
                     </p>
-                    <p style={{ color: "#94a3b8", fontSize: "11px" }}>17th March, 2026 — Full Day</p>
+                    <p style={{ color: "#94a3b8", fontSize: "11px" }}>16th & 17th March, 2026 — Full Day</p>
                   </div>
                 </div>
               </div>
@@ -103,7 +102,7 @@ export function Exposition() {
                 <h3
                   style={{ color: "#C9933A", fontSize: "13px", fontWeight: 700, letterSpacing: "0.15em", marginBottom: "16px" }}
                 >
-                  EXPO HIGHLIGHTS
+                  VALUE PROPOSITION
                 </h3>
                 <div className="flex flex-col gap-3">
                   {highlights.map((h, i) => (
@@ -130,7 +129,7 @@ export function Exposition() {
                 <h3
                   style={{ color: "#C9933A", fontSize: "13px", fontWeight: 700, letterSpacing: "0.15em", marginBottom: "16px" }}
                 >
-                  FEATURED EXHIBITORS
+                  WHO SHOULD EXHIBIT?
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {companies.map((c, i) => (
@@ -164,8 +163,8 @@ export function Exposition() {
                 </p>
                 <p style={{ color: "#94a3b8", fontSize: "12px", marginTop: "4px" }}>
                   Contact us at{" "}
-                  <a href="mailto:Da2026@rru.ac.in" style={{ color: "#C9933A" }}>
-                    Da2026@rru.ac.in
+                  <a href="mailto:da2026@rru.ac.in" style={{ color: "#C9933A" }}>
+                    da2026@rru.ac.in
                   </a>{" "}
                   for exhibition opportunities.
                 </p>
@@ -182,18 +181,19 @@ export function Exposition() {
                 className="inline-block px-3 py-1 rounded-full mb-4"
                 style={{ backgroundColor: "rgba(255,255,255,0.2)", color: "#fff", fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em" }}
               >
-                INNOVATION CORNER
+                B2B MEETINGS
               </div>
               <h3
                 style={{ fontSize: "24px", fontWeight: 800, color: "#fff", lineHeight: 1.2, marginBottom: "12px" }}
               >
-                Start-up Pitch
+                Company Showcases
                 <br />
-                Sessions
+                & B2B Formats
               </h3>
               <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "14px", lineHeight: 1.7 }}>
-                Watch India's next generation of defence innovators pitch live to an audience of
-                global Defence Attachés and industry leaders.
+                A strategic platform integrating defence diplomacy, industrial capability, and
+                institutional leadership in national security — enabling informed and professional
+                engagement among defence representatives, strategic community, and technology enterprises.
               </p>
             </div>
             <div className="relative" style={{ minHeight: "200px" }}>
