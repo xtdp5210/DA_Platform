@@ -49,7 +49,7 @@ class RegisterUserView(generics.CreateAPIView):
                     message=f"Your verification code is: {otp}. It will expire in 3 minutes.",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
-                    fail_silently=True,
+                    fail_silently=False,
                 )
             except Exception as e:
                 security_logger.error("Failed to send OTP email to %s: %s", user.email, e)
@@ -234,7 +234,7 @@ class ForgotPasswordView(views.APIView):
                             message=f"Your password reset code is: {o}. It will expire in 3 minutes.",
                             from_email=settings.DEFAULT_FROM_EMAIL,
                             recipient_list=[u.email],
-                            fail_silently=True,
+                            fail_silently=False,
                         )
                     except Exception as exc:
                         security_logger.error("Failed to send reset OTP to %s: %s", u.email, exc)
@@ -310,7 +310,7 @@ class ResendOTPView(views.APIView):
                         message=f"Your new verification code is: {o}. It will expire in 3 minutes.",
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         recipient_list=[u.email],
-                        fail_silently=True,
+                        fail_silently=False,
                     )
                 except Exception as exc:
                     security_logger.error("Failed to resend OTP to %s: %s", u.email, exc)
