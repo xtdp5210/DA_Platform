@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from django.utils.crypto import get_random_string
@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 import logging
 import hmac
 import threading
+import sys
 
 security_logger = logging.getLogger('backend')
 
@@ -51,8 +52,10 @@ class RegisterUserView(generics.CreateAPIView):
                     recipient_list=[user.email],
                     fail_silently=False,
                 )
+                security_logger.warning("OTP email sent successfully to %s", user.email)
             except Exception as e:
                 security_logger.error("Failed to send OTP email to %s: %s", user.email, e)
+                print(f"EMAIL ERROR (OTP): {e}", file=sys.stderr, flush=True)
 
         threading.Thread(target=_send_otp, daemon=True).start()
 
@@ -236,8 +239,10 @@ class ForgotPasswordView(views.APIView):
                             recipient_list=[u.email],
                             fail_silently=False,
                         )
+                        security_logger.warning("Reset OTP email sent successfully to %s", u.email)
                     except Exception as exc:
                         security_logger.error("Failed to send reset OTP to %s: %s", u.email, exc)
+                        print(f"EMAIL ERROR (reset): {exc}", file=sys.stderr, flush=True)
 
                 threading.Thread(target=_send_reset, daemon=True).start()
             except User.DoesNotExist:
@@ -312,8 +317,10 @@ class ResendOTPView(views.APIView):
                         recipient_list=[u.email],
                         fail_silently=False,
                     )
+                    security_logger.warning("Resend OTP email sent successfully to %s", u.email)
                 except Exception as exc:
                     security_logger.error("Failed to resend OTP to %s: %s", u.email, exc)
+                    print(f"EMAIL ERROR (resend): {exc}", file=sys.stderr, flush=True)
 
             threading.Thread(target=_send_resend, daemon=True).start()
         except User.DoesNotExist:
@@ -323,3 +330,36 @@ class ResendOTPView(views.APIView):
             {"message": "If an unverified account exists for that email, a new OTP has been sent."},
             status=status.HTTP_200_OK
         )
+
+
+class EmailTestView(views.APIView):
+    """Admin-only endpoint to verify SMTP is working on the live server.
+    POST /users/email-test/ with {"to": "you@example.com"}
+    Returns success or the exact SMTP error message."""
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        to = request.data.get('to', '').strip()
+        if not to:
+            return Response({"error": "Provide a 'to' email address."}, status=status.HTTP_400_BAD_REQUEST)
+
+        config = {
+            "EMAIL_HOST": settings.EMAIL_HOST,
+            "EMAIL_PORT": settings.EMAIL_PORT,
+            "EMAIL_HOST_USER": settings.EMAIL_HOST_USER or "(empty)",
+            "DEFAULT_FROM_EMAIL": settings.DEFAULT_FROM_EMAIL or "(empty)",
+            "EMAIL_USE_TLS": settings.EMAIL_USE_TLS,
+            "EMAIL_TIMEOUT": getattr(settings, 'EMAIL_TIMEOUT', None),
+        }
+
+        try:
+            send_mail(
+                subject="DA Platform — SMTP Test",
+                message="This is a test email from your Render deployment.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to],
+                fail_silently=False,
+            )
+            return Response({"status": "sent", "config": config})
+        except Exception as e:
+            return Response({"status": "failed", "error": str(e), "config": config}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
