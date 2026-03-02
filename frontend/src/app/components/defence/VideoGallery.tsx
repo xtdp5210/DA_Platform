@@ -84,7 +84,9 @@ function VideoCard({
             alt={video.title}
             style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.75 }}
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${video.id}/hqdefault.jpg`;
+              const img = e.currentTarget as HTMLImageElement;
+              img.onerror = null; // prevent infinite loop if fallback also fails
+              img.src = `https://img.youtube.com/vi/${video.id}/hqdefault.jpg`;
             }}
           />
           {/* Dark overlay */}
