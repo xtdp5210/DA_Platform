@@ -67,8 +67,8 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
     const handleTimeUpdate = () => {
       if (video.currentTime >= 9) {
         const elapsed = (Date.now() - startTime) / 1000;
-        if (elapsed < 15) {
-          video.currentTime = 5; // replay flag section (5s→9s loop)
+        if (elapsed < 20) {
+          video.currentTime = 6; // replay flag section (5s→9s loop)
         } else {
           video.currentTime = 0; // restart full video
           startTime = Date.now();
