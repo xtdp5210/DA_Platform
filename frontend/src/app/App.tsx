@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Layout from "./components/Layout";
 import { Hero } from "./components/defence/Hero";
@@ -31,7 +32,21 @@ import FloorMapPage from "./components/defence/FloorMapPage";
 import { IndianBorder } from "./components/defence/IndianBorder";
 import { Header } from "./components/defence/Header";
 import { Footer } from "./components/defence/Footer";
+const BACKEND = "https://da-platform.onrender.com";
+
+function useKeepAlive() {
+  // Ping the backend every 14 min so Render free tier doesn't spin down
+  // (Render sleeps after 15 min of inactivity)
+  const ping = () => fetch(`${BACKEND}/health/`, { mode: "no-cors", cache: "no-store" }).catch(() => {});
+  useEffect(() => {
+    ping(); // immediate ping on mount
+    const id = setInterval(ping, 14 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+}
+
 function MainPage() {
+  useKeepAlive();
   return (
     <>
       <div className="w-full min-h-screen" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif", backgroundColor: "#ffffff" }}>
