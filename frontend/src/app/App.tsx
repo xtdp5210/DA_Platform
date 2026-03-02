@@ -8,7 +8,7 @@ import { Objectives } from "./components/defence/Objectives";
 import { Programme } from "./components/defence/Programme";
 import { Exposition } from "./components/defence/Exposition";
 import { WhyAttend } from "./components/defence/WhyAttend";
-import { StrategicOutcomes } from "./components/defence/Strategicoutcomes ";
+import { StrategicOutcomes } from "./components/defence/Strategicoutcomes";
 import { PhotoGallery } from "./components/defence/PhotoGallery";
 import { VideoGallery } from "./components/defence/VideoGallery";
 import { SponsorsSection } from "./components/defence/Sponsorssection";
