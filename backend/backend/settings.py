@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'users',
     'exhibitions',
     'payments',
+    'anymail',
 ]
 
 MIDDLEWARE = [
@@ -178,14 +179,12 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 ])
 CORS_ALLOW_CREDENTIALS = True
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_TIMEOUT = 25  # seconds — allows for Gmail SMTP cold connect on Render
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+ANYMAIL = {
+    'SENDGRID_API_KEY': env('SENDGRID_API_KEY', default=''),
+}
+DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER', default='da@rru.ac.in')
+EMAIL_HOST_USER = DEFAULT_FROM_EMAIL
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

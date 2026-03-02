@@ -17,3 +17,4 @@ razorpay
 google-auth
 xhtml2pdf
 gunicorn
+django-anymail[sendgrid]
