@@ -43,21 +43,18 @@ class RegisterUserView(generics.CreateAPIView):
 
         otp = user.otp_verification.generate_otp()
 
-        def _send_otp():
-            try:
-                send_mail(
-                    subject="Verify your Defense Tech Exhibition Account",
-                    message=f"Your verification code is: {otp}. It will expire in 3 minutes.",
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=False,
-                )
-                security_logger.warning("OTP email sent successfully to %s", user.email)
-            except Exception as e:
-                security_logger.error("Failed to send OTP email to %s: %s", user.email, e)
-                print(f"EMAIL ERROR (OTP): {e}", file=sys.stderr, flush=True)
-
-        threading.Thread(target=_send_otp, daemon=True).start()
+        try:
+            send_mail(
+                subject="Verify your Defense Tech Exhibition Account",
+                message=f"Your verification code is: {otp}. It will expire in 3 minutes.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            security_logger.warning("OTP email sent to %s", user.email)
+        except Exception as e:
+            security_logger.error("SMTP FAILED for %s: %s", user.email, e)
+            print(f"SMTP FAILED (register): {e}", file=sys.stderr, flush=True)
 
         return Response({
             "message": "Registration successful. Please check your email for the OTP.",
@@ -230,21 +227,18 @@ class ForgotPasswordView(views.APIView):
                 
                 otp = user.otp_verification.generate_otp()
 
-                def _send_reset(u=user, o=otp):
-                    try:
-                        send_mail(
-                            subject="Password Reset Code",
-                            message=f"Your password reset code is: {o}. It will expire in 3 minutes.",
-                            from_email=settings.DEFAULT_FROM_EMAIL,
-                            recipient_list=[u.email],
-                            fail_silently=False,
-                        )
-                        security_logger.warning("Reset OTP email sent successfully to %s", u.email)
-                    except Exception as exc:
-                        security_logger.error("Failed to send reset OTP to %s: %s", u.email, exc)
-                        print(f"EMAIL ERROR (reset): {exc}", file=sys.stderr, flush=True)
-
-                threading.Thread(target=_send_reset, daemon=True).start()
+                try:
+                    send_mail(
+                        subject="Password Reset Code",
+                        message=f"Your password reset code is: {otp}. It will expire in 3 minutes.",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False,
+                    )
+                    security_logger.warning("Reset OTP sent to %s", user.email)
+                except Exception as exc:
+                    security_logger.error("SMTP FAILED (reset) for %s: %s", user.email, exc)
+                    print(f"SMTP FAILED (reset): {exc}", file=sys.stderr, flush=True)
             except User.DoesNotExist:
                 pass 
 
@@ -308,21 +302,18 @@ class ResendOTPView(views.APIView):
 
             otp = user.otp_verification.generate_otp()
 
-            def _send_resend(u=user, o=otp):
-                try:
-                    send_mail(
-                        subject="Your New Verification Code",
-                        message=f"Your new verification code is: {o}. It will expire in 3 minutes.",
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[u.email],
-                        fail_silently=False,
-                    )
-                    security_logger.warning("Resend OTP email sent successfully to %s", u.email)
-                except Exception as exc:
-                    security_logger.error("Failed to resend OTP to %s: %s", u.email, exc)
-                    print(f"EMAIL ERROR (resend): {exc}", file=sys.stderr, flush=True)
-
-            threading.Thread(target=_send_resend, daemon=True).start()
+            try:
+                send_mail(
+                    subject="Your New Verification Code",
+                    message=f"Your new verification code is: {otp}. It will expire in 3 minutes.",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                security_logger.warning("Resend OTP sent to %s", user.email)
+            except Exception as exc:
+                security_logger.error("SMTP FAILED (resend) for %s: %s", user.email, exc)
+                print(f"SMTP FAILED (resend): {exc}", file=sys.stderr, flush=True)
         except User.DoesNotExist:
             pass  # Silently ignore — no account enumeration
 

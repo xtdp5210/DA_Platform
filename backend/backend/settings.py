@@ -312,7 +312,11 @@ LOGGING = {
         },
         'backend': {
             'handlers': ['console'],
-            'level': 'WARNING',
+            'level': 'DEBUG',
+        },
+        'django.core.mail': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
     },
 }
