@@ -8,9 +8,12 @@ import { Objectives } from "./components/defence/Objectives";
 import { Programme } from "./components/defence/Programme";
 import { Exposition } from "./components/defence/Exposition";
 import { WhyAttend } from "./components/defence/WhyAttend";
-import { StrategicOutcomes } from "@/app/components/defence/Strategicoutcomes";
-import { PhotoGallery } from "@/app/components/defence/PhotoGallery";
-import { VideoGallery } from "@/app/components/defence/VideoGallery";
+import {
+  PhotoGallery,
+  VideoGallery,
+  StrategicOutcomes,
+  RegistrationPage,
+} from "./components/defence";
 import { SponsorsSection } from "./components/defence/Sponsorssection";
 import { AuthProvider } from "../store/authStore";
 import ProtectedRoute from "../app/components/ProtectedRoute";
@@ -20,7 +23,6 @@ import OTPVerifyPage from "./components/defence/OTPVerifyPage";
 import ForgotPasswordPage from "./components/defence/ForgotPasswordPage";
 import ResetPasswordPage from "./components/defence/ResetPasswordPage";
 import DashboardPage from "./components/defence/DashboardPage";
-import RegistrationPage from "@/app/components/defence/RegistrationPage";
 import ProfilePage from "./components/defence/ProfilePage";
 import FloorMapPage from "./components/defence/FloorMapPage";
 
