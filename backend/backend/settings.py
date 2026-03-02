@@ -37,7 +37,7 @@ DEBUG = env.bool('DEBUG', default=False)
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID')
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
-RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET')  # No default — must be set in .env
+RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', default='')
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
