@@ -20,24 +20,21 @@ function getTimeLeft() {
 // memo: only re-renders when value or label actually changes (not every second tick)
 const CountdownUnit = memo(function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex flex-col items-center px-4 py-3" style={{ minWidth: "72px" }}>
+    <div className="flex flex-col items-center px-1 sm:px-4 py-2 sm:py-3" style={{ minWidth: "52px" }}>
       <div
         className="rounded-lg flex items-center justify-center mb-1"
         style={{
-          width: "64px",
-          height: "64px",
-          // Solid color instead of backdropFilter blur — blur triggers expensive GPU repaint every second
+          width: "clamp(44px, 12vw, 64px)",
+          height: "clamp(44px, 12vw, 64px)",
           backgroundColor: "rgba(194,79,29,0.92)",
           border: "2px solid rgba(201,147,58,0.5)",
         }}
       >
-        <span style={{ fontSize: "28px", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
+        <span style={{ fontSize: "clamp(18px, 5vw, 28px)", fontWeight: 800, color: "#fff", letterSpacing: "-0.02em" }}>
           {String(value).padStart(2, "0")}
         </span>
       </div>
-      <span
-        style={{ fontSize: "9px", fontWeight: 700, color: "#C9933A", letterSpacing: "0.15em" }}
-      >
+      <span style={{ fontSize: "clamp(7px, 2vw, 9px)", fontWeight: 700, color: "#C9933A", letterSpacing: "0.12em" }}>
         {label}
       </span>
     </div>
@@ -279,15 +276,15 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-wrap gap-4 justify-center mt-4">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center mt-4 w-full px-2">
           <button
             onClick={() => window.location.href = "/registerevent"}
-            className="px-8 py-4 rounded-lg cursor-pointer"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-lg cursor-pointer"
             style={{
               transition: "background-color 300ms ease, transform 300ms ease",
               backgroundColor: "#C24F1D",
               color: "#fff",
-              fontSize: "13px",
+              fontSize: "clamp(11px, 3vw, 13px)",
               fontWeight: 800,
               letterSpacing: "0.1em",
               border: "none",
@@ -306,12 +303,12 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
           </button>
           <button
             onClick={() => scrollTo("#programme")}
-            className="px-8 py-4 rounded-lg cursor-pointer"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-lg cursor-pointer"
             style={{
               transition: "border-color 300ms ease, color 300ms ease",
               backgroundColor: "transparent",
               color: "#fff",
-              fontSize: "13px",
+              fontSize: "clamp(11px, 3vw, 13px)",
               fontWeight: 700,
               letterSpacing: "0.1em",
               border: "2px solid rgba(255,255,255,0.4)",
@@ -327,21 +324,20 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
           >
             VIEW PROGRAMME
           </button>
-
-          {/* Floor Map Button */}
           <button
             onClick={() => window.location.href = "/floormap"}
-            className="px-8 py-4 rounded-lg cursor-pointer"
+            className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-lg cursor-pointer"
             style={{
               transition: "background-color 300ms ease, border-color 300ms ease, transform 300ms ease",
               backgroundColor: "rgba(201,147,58,0.12)",
               color: "#C9933A",
-              fontSize: "13px",
+              fontSize: "clamp(11px, 3vw, 13px)",
               fontWeight: 700,
               letterSpacing: "0.1em",
               border: "2px solid rgba(201,147,58,0.5)",
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: "8px",
             }}
             onMouseEnter={(e) => {
@@ -355,7 +351,6 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
               (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
             }}
           >
-            {/* Grid icon */}
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
               <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />

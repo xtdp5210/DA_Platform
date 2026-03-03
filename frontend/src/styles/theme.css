@@ -5,6 +5,26 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
+  /* prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  /* safe area for iPhone notch / home indicator */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Minimum tap target size for touch devices */
+button, a, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Smooth scrolling & momentum on iOS */
+.overflow-y-auto, .overflow-y-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 
 * {

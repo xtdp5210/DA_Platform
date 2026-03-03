@@ -50,10 +50,10 @@ function MainPage() {
   return (
     <>
       <div className="w-full min-h-screen" style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif", backgroundColor: "#ffffff" }}>
-        <IndianBorder sticky />
+        <IndianBorder />
         <Header onRegister={() => window.location.href = "/register"} onLogin={() => window.location.href = "/login"} />
         <Hero onRegister={() => window.location.href = "/register"} />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 py-4 sm:py-8">
           <Background />
           <About />
           <Objectives />
@@ -62,7 +62,7 @@ function MainPage() {
           <WhyAttend onRegister={() => window.location.href = "/register"} />
           <PhotoGallery />
           <VideoGallery />
-          <SponsorsSection />
+          {/* <SponsorsSection /> */}
           <StrategicOutcomes />
         </div>
         <Footer onRegister={() => window.location.href = "/register"} />
