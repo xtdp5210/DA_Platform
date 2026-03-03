@@ -177,7 +177,7 @@ export function Footer({ onRegister }: { onRegister?: () => void }) {
                 <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "10px", fontWeight: 600, letterSpacing: "0.1em" }}>
                   WEBSITE
                 </p>
-                <p style={{ color: "#fff", fontSize: "12px", fontWeight: 600 }}>defenceattacheroundtable.rru.ac.in</p>
+                <p style={{ color: "#fff", fontSize: "12px", fontWeight: 600 }}>defenceattache.rru.ac.in</p>
               </div>
             </a>
 

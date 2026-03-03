@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
-import mhaLogo from "../../../Assets/Ministry_of_Home_Affairs_India.jpg";
-import meaLogo from "../../../Assets/Ministry_of_External_Affairs_India.jpg";
+import mhaLogo from "../../../Assets/Ministry_of_Home_Affairs_India.svg";
+import meaLogo from "../../../Assets/Ministry_of_External_Affairs_India.svg";
 import rruLogo from "../../../Assets/Rashtriya_Raksha_University_logo.png";
-import modLogo from "../../../Assets/Ministry_of_Defence_India.jpg";
-import drdoLogo from "../../../Assets/drdo.jpg";
+import modLogo from "../../../Assets/Ministry_of_Defence_India.svg";
+import drdoLogo from "../../../Assets/drdo.svg";
 
 const navLinks = [
   // { label: "Home", href: "#home" },
@@ -27,27 +27,42 @@ const logoMap: Record<string, string> = {
 
 function InstitutionLogo({ abbr, full, mobile = false }: { abbr: string; full: string; mobile?: boolean }) {
   const isMinistrySeal = abbr === "MHA" || abbr === "MEA" || abbr === "MoD";
-  const desktopW = isMinistrySeal ? 160 : abbr === "DRDO" ? 80 : 52;
-  const desktopH = isMinistrySeal ? 100 : abbr === "DRDO" ? 80 : 52;
-  const mobileW  = isMinistrySeal ? 56  : abbr === "DRDO" ? 44 : 36;
-  const mobileH  = isMinistrySeal ? 44  : abbr === "DRDO" ? 44 : 36;
-  const w = mobile ? mobileW : desktopW;
-  const h = mobile ? mobileH : desktopH;
+
+  // All 3 ministry seals share IDENTICAL box — SVG scales to fit via objectFit contain
+  const boxW = mobile ? 52 : 130;
+  const boxH = mobile ? 42 : 88;
+
+  const drdoboxW = mobile ? 42 : 80;
+  const drdoboxH = mobile ? 42 : 80;
+
+  const rruboxW = mobile ? 34 : 56;
+  const rruboxH = mobile ? 34 : 56;
+
+  const w = isMinistrySeal ? boxW : abbr === "DRDO" ? drdoboxW : rruboxW;
+  const h = isMinistrySeal ? boxH : abbr === "DRDO" ? drdoboxH : rruboxH;
 
   return (
-    <div className="flex flex-col items-center" style={{ margin: 0 }}>
-      <div className="flex items-center justify-center overflow-hidden">
+    <div className="flex flex-col items-center justify-center" style={{ margin: 0 }}>
+      {/* Fixed-size container — all ministry seals are identical boxes */}
+      <div
+        style={{
+          width: `${w}px`,
+          height: `${h}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
         <img
           src={logoMap[abbr]}
-          alt={abbr}
+          alt={full}
           style={{
-            width: `${w}px`,
-            height: `${h}px`,
+            width: "100%",
+            height: "100%",
             objectFit: "contain",
-            background: "none",
+            objectPosition: "center",
             display: "block",
-            marginTop: !mobile && isMinistrySeal ? "-14px" : "0",
-            marginBottom: !mobile && isMinistrySeal ? "-14px" : "0",
           }}
           onError={(e) => {
             const el = e.currentTarget;
@@ -65,7 +80,7 @@ function InstitutionLogo({ abbr, full, mobile = false }: { abbr: string; full: s
       {abbr === "RRU" && !mobile && (
         <span
           className="text-center hidden md:block"
-          style={{ fontSize: "11px", color: "#444", maxWidth: "100px", lineHeight: "1.2", fontWeight: "bold" }}
+          style={{ fontSize: "11px", color: "#444", maxWidth: "100px", lineHeight: "1.2", fontWeight: "bold", marginTop: "2px" }}
         >
           {full}
         </span>
@@ -124,11 +139,11 @@ export function Header({ onRegister, onLogin }: { onRegister?: () => void; onLog
           <div className="flex-shrink-0">
             <InstitutionLogo abbr="RRU" full="Rashtriya Raksha University" />
           </div>
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center justify-center gap-6 flex-wrap">
             <InstitutionLogo abbr="MHA" full="Ministry of Home Affairs" />
-            <div className="hidden sm:block w-px h-10 bg-gray-200" />
+            <div className="hidden sm:block w-px h-14 bg-gray-300" />
             <InstitutionLogo abbr="MEA" full="Ministry of External Affairs" />
-            <div className="hidden sm:block w-px h-10 bg-gray-200" />
+            <div className="hidden sm:block w-px h-14 bg-gray-300" />
             <InstitutionLogo abbr="MoD" full="Ministry of Defence" />
           </div>
           <div className="flex-shrink-0">
@@ -160,25 +175,12 @@ export function Header({ onRegister, onLogin }: { onRegister?: () => void; onLog
           boxShadow: scrolled ? "0 2px 20px rgba(0,0,0,0.3)" : "none",
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded flex items-center justify-center"
-              style={{ backgroundColor: "#C24F1D" }}
-            >
-              <span style={{ color: "#fff", fontSize: "10px", fontWeight: 800, letterSpacing: "0.05em" }}>RRU</span>
-            </div>
-            <span
-              className="hidden sm:block"
-              style={{ color: "#fff", fontSize: "11px", fontWeight: 600, letterSpacing: "0.08em" }}
-            >
-              DEFENCE ATTACHÉ ROUNDTABLE 2026
-            </span>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 flex items-center h-14">
+          {/* Left spacer (balances the right buttons) — desktop only */}
+          <div className="hidden md:flex items-center" style={{ minWidth: "200px" }} />
 
-          {/* Desktop Links */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* Desktop Nav Links — centered */}
+          <div className="hidden md:flex flex-1 items-center justify-center gap-20">
             {navLinks.map((link) => (
               <button
                 key={link.label}
@@ -191,6 +193,10 @@ export function Header({ onRegister, onLogin }: { onRegister?: () => void; onLog
                 {link.label}
               </button>
             ))}
+          </div>
+
+          {/* Right: Register + Login buttons — desktop */}
+          <div className="hidden md:flex items-center gap-3" style={{ minWidth: "200px", justifyContent: "flex-end" }}>
             <button
               onClick={() => onRegister?.()}
               className="px-4 py-2 rounded transition-all duration-200 cursor-pointer"
@@ -226,13 +232,14 @@ export function Header({ onRegister, onLogin }: { onRegister?: () => void; onLog
           </div>
 
           {/* Mobile menu button */}
-          <button
-            className="md:hidden"
-            style={{ color: "#fff", background: "none", border: "none", cursor: "pointer" }}
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          <div className="md:hidden flex flex-1 justify-end">
+            <button
+              style={{ color: "#fff", background: "none", border: "none", cursor: "pointer" }}
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}

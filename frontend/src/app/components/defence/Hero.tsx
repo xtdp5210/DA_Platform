@@ -43,6 +43,7 @@ const CountdownUnit = memo(function CountdownUnit({ value, label }: { value: num
 
 export function Hero({ onRegister }: { onRegister?: () => void }) {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+  const [videoReady, setVideoReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Countdown timer
@@ -51,10 +52,7 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Loop video:
-  // - Play 0s → 9s (Indian flag appears at 5s)
-  // - At 9s, loop back to 5s to keep showing the flag
-  // - Once 15 real seconds have elapsed since start, restart from 0s
+  // Loop video with Intersection Observer — only play when visible
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -65,19 +63,32 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
       if (video.currentTime >= 9) {
         const elapsed = (Date.now() - startTime) / 1000;
         if (elapsed < 20) {
-          video.currentTime = 6; // replay flag section (5s→9s loop)
+          video.currentTime = 6;
         } else {
-          video.currentTime = 0; // restart full video
+          video.currentTime = 0;
           startTime = Date.now();
         }
       }
     };
 
     video.addEventListener("timeupdate", handleTimeUpdate);
-    video.play().catch(() => {});
+
+    // Only start playing when section enters viewport
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(video);
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
+      observer.disconnect();
     };
   }, []);
 
@@ -94,19 +105,33 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
     >
       {/* ── Video Background ── */}
       <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Fallback background shown instantly while video loads */}
+        {!videoReady && (
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(135deg, #050e1c 0%, #0A1628 50%, #0d1f3c 100%)",
+              zIndex: 1,
+            }}
+          />
+        )}
+
         <video
           ref={videoRef}
           src={heroVideo}
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
           className="absolute inset-0 w-full h-full"
+          onCanPlay={() => setVideoReady(true)}
           style={{
             objectFit: "cover",
             objectPosition: "center",
-            // Promote video to its own GPU compositor layer — prevents it triggering repaints on other layers
             transform: "translateZ(0)",
             willChange: "transform",
+            opacity: videoReady ? 1 : 0,
+            transition: "opacity 0.8s ease",
+            zIndex: 0,
           }}
         />
 
