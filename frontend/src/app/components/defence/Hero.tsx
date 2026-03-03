@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import heroVideo from "../../../Assets/Hero_Section.mp4";
+import heroPoster from "../../../Assets/hero_poster.jpg";
 
 // Static data — defined outside component so it's never re-allocated
 const SVG_LINES = Array.from({ length: 10 }, (_, i) => i);
@@ -119,6 +120,7 @@ export function Hero({ onRegister }: { onRegister?: () => void }) {
         <video
           ref={videoRef}
           src={heroVideo}
+          poster={heroPoster}
           muted
           playsInline
           preload="metadata"
