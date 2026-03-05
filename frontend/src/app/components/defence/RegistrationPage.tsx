@@ -202,18 +202,32 @@ function StallMap({
 export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => void; onLogin?: () => void }) {
   const navigate = useNavigate();
   
-  // State
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [form, setForm] = useState<RegistrationForm>(EMPTY_FORM);
+  const SESSION_KEY = "reg_session_v1";
+
+  // Restore session from localStorage
+  const savedSession = (() => {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch { return null; }
+  })();
+
+  // State — restored from session if available
+  const [step, setStep] = useState<1 | 2 | 3>(savedSession?.step ?? 1);
+  const [form, setForm] = useState<RegistrationForm>(savedSession?.form ?? EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // API State
   const [apiStalls, setApiStalls] = useState<Stall[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
-  const [selectedStalls, setSelectedStalls] = useState<Stall[]>([]);
+  const [selectedStalls, setSelectedStalls] = useState<Stall[]>(savedSession?.selectedStalls ?? []);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Persist session to localStorage whenever step/form/selectedStalls change
+  useEffect(() => {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ step, form, selectedStalls }));
+    } catch {}
+  }, [step, form, selectedStalls]);
 
   // Fetch stalls on mount
   useEffect(() => {
@@ -305,6 +319,7 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
           })
         )
       );
+      localStorage.removeItem(SESSION_KEY);
       navigate("/dashboard", { state: { registered: true } });
     } catch (err: any) {
       const data = err.response?.data;
@@ -452,7 +467,7 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
                   {SUPPORT.map((item) => {
                     const isSelected = form.additional_support.includes(item);
                     return (
-                      <label key={item} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? "border-[#C24F1D] bg-orange-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}>
+                      <label key={item} onClick={() => toggleSupport(item)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? "border-[#C24F1D] bg-orange-50" : "border-gray-200 hover:border-gray-300 bg-white"}`}>
                         <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? "bg-[#C24F1D] border-[#C24F1D]" : "border-gray-300"}`}>
                           {isSelected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
                         </div>

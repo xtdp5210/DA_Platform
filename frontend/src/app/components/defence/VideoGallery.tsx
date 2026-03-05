@@ -175,27 +175,32 @@ export function VideoGallery() {
           </div>
 
           {/* Prev/Next controls */}
-          <div className="flex items-center gap-3">
-            <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
+          <div className="flex items-center gap-4">
+            <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: 700, letterSpacing: "0.05em" }}>
               {page + 1} / {totalPages}
             </span>
             {[
-              { disabled: page === 0, action: () => setPage(page - 1), icon: "M15 18l-6-6 6-6" },
-              { disabled: page >= totalPages - 1, action: () => setPage(page + 1), icon: "M9 18l6-6-6-6" },
-            ].map(({ disabled, action, icon }, i) => (
+              { disabled: page === 0, action: () => setPage(page - 1), icon: "M15 18l-6-6 6-6", label: "Prev" },
+              { disabled: page >= totalPages - 1, action: () => setPage(page + 1), icon: "M9 18l6-6-6-6", label: "Next" },
+            ].map(({ disabled, action, icon, label }, i) => (
               <button
                 key={i}
                 onClick={action}
                 disabled={disabled}
-                className="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-all duration-200"
+                title={label}
+                className="flex items-center justify-center transition-all duration-200"
                 style={{
-                  backgroundColor: disabled ? "rgba(255,255,255,0.05)" : "#C24F1D",
-                  border: "none",
-                  color: disabled ? "#4b5563" : "#fff",
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  backgroundColor: disabled ? "rgba(255,255,255,0.04)" : "#C24F1D",
+                  border: disabled ? "1.5px solid rgba(255,255,255,0.12)" : "1.5px solid #C24F1D",
+                  color: disabled ? "rgba(255,255,255,0.25)" : "#fff",
                   cursor: disabled ? "not-allowed" : "pointer",
+                  boxShadow: disabled ? "none" : "0 4px 16px rgba(194,79,29,0.4)",
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d={icon} />
                 </svg>
               </button>
@@ -218,24 +223,65 @@ export function VideoGallery() {
           })}
         </div>
 
-        {/* Dot nav */}
-        <div className="flex justify-center gap-2 mt-8">
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i)}
-              style={{
-                width: i === page ? "28px" : "8px",
-                height: "8px",
-                borderRadius: "4px",
-                backgroundColor: i === page ? "#C24F1D" : "rgba(255,255,255,0.2)",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                transition: "all 0.3s ease",
-              }}
-            />
-          ))}
+        {/* Dot nav with arrows */}
+        <div className="flex justify-center items-center gap-4 mt-8">
+          {/* Prev arrow */}
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="flex items-center justify-center transition-all duration-200"
+            style={{
+              width: "38px", height: "38px", borderRadius: "50%",
+              backgroundColor: page === 0 ? "rgba(255,255,255,0.08)" : "#C24F1D",
+              border: page === 0 ? "1.5px solid rgba(255,255,255,0.15)" : "none",
+              color: page === 0 ? "rgba(255,255,255,0.25)" : "#fff",
+              cursor: page === 0 ? "not-allowed" : "pointer",
+              boxShadow: page === 0 ? "none" : "0 4px 12px rgba(194,79,29,0.4)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          {/* Dots */}
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i)}
+                style={{
+                  width: i === page ? "28px" : "8px",
+                  height: "8px",
+                  borderRadius: "4px",
+                  backgroundColor: i === page ? "#C24F1D" : "rgba(255,255,255,0.2)",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  transition: "all 0.3s ease",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Next arrow */}
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="flex items-center justify-center transition-all duration-200"
+            style={{
+              width: "38px", height: "38px", borderRadius: "50%",
+              backgroundColor: page >= totalPages - 1 ? "rgba(255,255,255,0.08)" : "#C24F1D",
+              border: page >= totalPages - 1 ? "1.5px solid rgba(255,255,255,0.15)" : "none",
+              color: page >= totalPages - 1 ? "rgba(255,255,255,0.25)" : "#fff",
+              cursor: page >= totalPages - 1 ? "not-allowed" : "pointer",
+              boxShadow: page >= totalPages - 1 ? "none" : "0 4px 12px rgba(194,79,29,0.4)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
 
         {/* YouTube CTA */}

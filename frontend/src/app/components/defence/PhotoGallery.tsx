@@ -237,14 +237,19 @@ export function PhotoGallery() {
           <button
             onClick={() => setThumbStart(Math.max(0, thumbStart - 1))}
             disabled={thumbStart === 0}
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer"
+            className="flex items-center justify-center flex-shrink-0 transition-all duration-200"
             style={{
-              backgroundColor: thumbStart === 0 ? "#e5e7eb" : "#0A1628",
-              color: thumbStart === 0 ? "#9ca3af" : "#fff",
-              border: "none",
+              width: "44px",
+              height: "44px",
+              borderRadius: "10px",
+              backgroundColor: thumbStart === 0 ? "rgba(0,0,0,0.04)" : "#C24F1D",
+              color: thumbStart === 0 ? "rgba(0,0,0,0.25)" : "#fff",
+              border: thumbStart === 0 ? "1.5px solid rgba(0,0,0,0.12)" : "1.5px solid #C24F1D",
+              cursor: thumbStart === 0 ? "not-allowed" : "pointer",
+              boxShadow: thumbStart === 0 ? "none" : "0 4px 14px rgba(194,79,29,0.35)",
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
@@ -295,35 +300,75 @@ export function PhotoGallery() {
           <button
             onClick={() => setThumbStart(Math.min(photos.length - THUMB_VISIBLE, thumbStart + 1))}
             disabled={thumbStart >= photos.length - THUMB_VISIBLE}
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer"
+            className="flex items-center justify-center flex-shrink-0 transition-all duration-200"
             style={{
-              backgroundColor: thumbStart >= photos.length - THUMB_VISIBLE ? "#e5e7eb" : "#0A1628",
-              color: thumbStart >= photos.length - THUMB_VISIBLE ? "#9ca3af" : "#fff",
-              border: "none",
+              width: "44px",
+              height: "44px",
+              borderRadius: "10px",
+              backgroundColor: thumbStart >= photos.length - THUMB_VISIBLE ? "rgba(0,0,0,0.04)" : "#C24F1D",
+              color: thumbStart >= photos.length - THUMB_VISIBLE ? "rgba(0,0,0,0.25)" : "#fff",
+              border: thumbStart >= photos.length - THUMB_VISIBLE ? "1.5px solid rgba(0,0,0,0.12)" : "1.5px solid #C24F1D",
+              cursor: thumbStart >= photos.length - THUMB_VISIBLE ? "not-allowed" : "pointer",
+              boxShadow: thumbStart >= photos.length - THUMB_VISIBLE ? "none" : "0 4px 14px rgba(194,79,29,0.35)",
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 18l6-6-6-6" />
             </svg>
           </button>
         </div>
 
-        {/* Dot indicators */}
-        <div className="flex justify-center gap-1.5 mt-6">
-          {photos.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              className="rounded-full cursor-pointer transition-all duration-200"
-              style={{
-                width: i === active ? "24px" : "6px",
-                height: "6px",
-                backgroundColor: i === active ? "#C24F1D" : "#d1d5db",
-                border: "none",
-                padding: 0,
-              }}
-            />
-          ))}
+        {/* Dot indicators with arrows */}
+        <div className="flex justify-center items-center gap-4 mt-6">
+          {/* Prev arrow */}
+          <button
+            onClick={prev}
+            className="flex items-center justify-center transition-all duration-200"
+            style={{
+              width: "38px", height: "38px", borderRadius: "50%",
+              backgroundColor: "#C24F1D", border: "none",
+              color: "#fff", cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(194,79,29,0.35)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          {/* Dots */}
+          <div className="flex items-center gap-1.5">
+            {photos.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className="rounded-full cursor-pointer transition-all duration-200"
+                style={{
+                  width: i === active ? "24px" : "8px",
+                  height: "8px",
+                  backgroundColor: i === active ? "#C24F1D" : "#d1d5db",
+                  border: "none",
+                  padding: 0,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Next arrow */}
+          <button
+            onClick={next}
+            className="flex items-center justify-center transition-all duration-200"
+            style={{
+              width: "38px", height: "38px", borderRadius: "50%",
+              backgroundColor: "#C24F1D", border: "none",
+              color: "#fff", cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(194,79,29,0.35)",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
       </div>
 
