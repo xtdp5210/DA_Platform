@@ -239,10 +239,14 @@ class ForgotPasswordView(views.APIView):
                 except Exception as exc:
                     security_logger.error("SMTP FAILED (reset) for %s: %s", user.email, exc)
                     print(f"SMTP FAILED (reset): {exc}", file=sys.stderr, flush=True)
-            except User.DoesNotExist:
-                pass 
 
-            return Response({"message": "If an account with that email exists, an OTP has been sent."}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "No account found with this email address. Please register first."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            return Response({"message": "An OTP has been sent to your email address."}, status=status.HTTP_200_OK)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

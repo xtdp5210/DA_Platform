@@ -48,9 +48,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    company_name = serializers.CharField(source='company_profile.company_name')
-    representative_name = serializers.CharField(source='company_profile.representative_name')
-    phone_number = serializers.CharField(source='company_profile.phone_number')
+    company_name = serializers.CharField(source='company_profile.company_name', required=False, allow_blank=True)
+    representative_name = serializers.CharField(source='company_profile.representative_name', required=False, allow_blank=True)
+    phone_number = serializers.CharField(source='company_profile.phone_number', required=False, allow_blank=True)
 
     class Meta:
         model = User

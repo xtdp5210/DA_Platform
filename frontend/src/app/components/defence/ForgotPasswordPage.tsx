@@ -17,7 +17,8 @@ const ForgotPasswordPage = () => {
       setSent(true);
     } catch (err: any) {
       setError(
-        err.response?.data?.message ||
+        err.response?.data?.error ||
+          err.response?.data?.message ||
           err.response?.data?.detail ||
           "Failed to send reset email."
       );

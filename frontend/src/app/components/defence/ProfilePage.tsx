@@ -8,10 +8,9 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    name: user?.name || "",
-    company_name: user?.company_name || "",
-    phone: user?.phone || "",
     representative_name: user?.representative_name || "",
+    company_name: user?.company_name || "",
+    phone_number: user?.phone_number || "",
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -65,10 +64,10 @@ const ProfilePage = () => {
         {/* Avatar / initials */}
         <div className="flex items-center gap-4 mb-8">
           <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-bold select-none">
-            {form.name?.charAt(0)?.toUpperCase() || "?"}
+            {form.representative_name?.charAt(0)?.toUpperCase() || "?"}
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-lg">{form.name || "Your Name"}</p>
+            <p className="font-semibold text-gray-900 text-lg">{form.representative_name || "Your Name"}</p>
             <p className="text-gray-500 text-sm">{user?.email}</p>
           </div>
         </div>
@@ -81,25 +80,10 @@ const ProfilePage = () => {
               </label>
               <input
                 type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                required
-                placeholder="Your full name"
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Representative Name
-              </label>
-              <input
-                type="text"
                 name="representative_name"
                 value={form.representative_name}
                 onChange={handleChange}
-                required
-                placeholder="Your representative name"
+                placeholder="Your full name"
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -125,10 +109,9 @@ const ProfilePage = () => {
               </label>
               <input
                 type="tel"
-                name="phone"
-                value={form.phone}
+                name="phone_number"
+                value={form.phone_number}
                 onChange={handleChange}
-                required
                 placeholder="+91 98765 43210"
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
