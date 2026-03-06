@@ -118,21 +118,14 @@ class VerifyPaymentView(views.APIView):
             stall.status = 'booked'
             stall.save()
 
-            # Generate PDF and save to payment.receipt_pdf so the
-            # dashboard "Download Receipt" button works immediately.
-            # Also email the PDF as an attachment.
+            # Generate PDF in memory and email it as attachment.
+            # Render free tier has ephemeral disk — receipt delivered via email only.
             pdf_file = generate_receipt_pdf(payment)
-            receipt_url = None
-
-            if pdf_file:
-                payment.receipt_pdf.save(pdf_file.name, pdf_file, save=True)
-                receipt_url = request.build_absolute_uri(payment.receipt_pdf.url)
 
             try:
                 from django.core.mail import EmailMultiAlternatives
-                send_payment_confirmed_email(registration, receipt_url=receipt_url)
+                send_payment_confirmed_email(registration, receipt_url=None)
                 if pdf_file:
-                    pdf_file.seek(0)  # rewind after .save()
                     to_emails = list({registration.contact_email, request.user.email})
                     attach_msg = EmailMultiAlternatives(
                         subject="📎 Your Official Receipt — Defence Attaché Roundtable 2026",
@@ -151,8 +144,8 @@ class VerifyPaymentView(views.APIView):
                 logging.getLogger(__name__).error("Payment receipt email failed: %s", e)
 
             return Response({
-                "message": "Payment successful! Stall officially booked and receipt emailed.",
-                "receipt_url": receipt_url,
+                "message": "Payment successful! Stall officially booked. Receipt has been emailed.",
+                "receipt_url": None,
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

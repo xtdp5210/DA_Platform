@@ -447,9 +447,9 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
 
       {/* Announcement Banner */}
       <div className="w-full bg-green-600 py-6 px-6 text-center">
-        <p className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide leading-snug">
+        {/* <p className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide leading-snug">
           🎉 All Stalls Are Available!
-        </p>
+        </p> */}
         <p className="text-green-100 text-base sm:text-lg font-semibold mt-2">
           Registration process will begin shortly — stay with us!
         </p>

@@ -103,18 +103,13 @@ def verify_upi_payments(modeladmin, request, queryset):
                 payment.save(update_fields=['status'])
 
             pdf_file = generate_receipt_pdf(payment)
-            receipt_url = None
-            if pdf_file:
-                payment.receipt_pdf.save(pdf_file.name, pdf_file, save=True)
-                receipt_url = payment.receipt_pdf.url
 
-            # 5. Fire confirmation email (best-effort)
+            # 5. Fire confirmation + receipt email (best-effort)
             try:
                 from exhibitions.email_utils import send_payment_confirmed_email
-                send_payment_confirmed_email(reg, receipt_url=receipt_url)
+                send_payment_confirmed_email(reg, receipt_url=None)
                 if pdf_file:
                     from django.core.mail import EmailMultiAlternatives
-                    pdf_file.seek(0)
                     attach_msg = EmailMultiAlternatives(
                         subject="📎 Your Official Receipt — Defence Attaché Roundtable 2026",
                         body=(

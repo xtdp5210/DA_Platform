@@ -359,19 +359,12 @@ const DashboardPage = () => {
                     {/* Card Action Footer */}
                     <div className="p-5 pt-0">
                       {isPaid ? (
-                        booking.receipt_url ? (
-                          <a href={booking.receipt_url} target="_blank" rel="noopener noreferrer"
-                            className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#0A1628] hover:bg-[#0A1628] hover:text-white text-[#0A1628] font-bold py-2.5 rounded-xl text-sm transition-colors">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            Download Receipt
-                          </a>
-                        ) : (
-                          <div className="w-full text-center bg-gray-50 border border-gray-100 text-gray-400 font-semibold py-2.5 rounded-xl text-sm">
-                            Receipt Generating...
-                          </div>
-                        )
+                        <div className="w-full flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold py-2.5 rounded-xl text-sm">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Receipt Emailed ✓
+                        </div>
                       ) : isProcessing ? (
                         <div className="w-full flex items-center justify-center gap-2 bg-amber-100 text-amber-800 font-bold py-2.5 rounded-xl text-sm">
                           <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

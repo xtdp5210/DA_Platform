@@ -58,7 +58,8 @@ def generate_receipt_pdf(payment_obj):
     pdf = pisa.pisaDocument(io.BytesIO(html.encode("UTF-8")), result)
     
     if not pdf.err:
-        file_name = f"Receipt_{payment_obj.razorpay_order_id}.pdf"
+        reg_id = getattr(payment_obj, 'registration_id', None) or 'unknown'
+        file_name = f"Receipt_REG{reg_id}.pdf"
         return ContentFile(result.getvalue(), name=file_name)
     
     return None
