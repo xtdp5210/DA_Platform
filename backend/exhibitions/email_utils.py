@@ -78,19 +78,25 @@ _FOOTER = """
 
 
 def _send(subject: str, to_emails: list[str], html_body: str, plain_body: str) -> None:
-    """Send an HTML email with a plain-text fallback. Fails silently."""
-    try:
-        msg = EmailMultiAlternatives(
-            subject=subject,
-            body=plain_body,
-            from_email=f"Defence Attaché Roundtable 2026 <{settings.DEFAULT_FROM_EMAIL}>",
-            to=to_emails,
-        )
-        msg.attach_alternative(html_body, "text/html")
-        msg.send(fail_silently=True)
-    except Exception as exc:
-        import logging
-        logging.getLogger(__name__).error("Email send failed: %s", exc)
+    """
+    Send an HTML email with a plain-text fallback.
+    Raises on failure so the caller (admin action) can surface the error.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    from_email = f"Defence Attaché Roundtable 2026 <{settings.DEFAULT_FROM_EMAIL}>"
+    logger.info("Sending email '%s' from=%s to=%s", subject, from_email, to_emails)
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=plain_body,
+        from_email=from_email,
+        to=to_emails,
+    )
+    msg.attach_alternative(html_body, "text/html")
+    # fail_silently=False so errors propagate to the admin action
+    msg.send(fail_silently=False)
 
 
 # ── 1. Submission Received ──────────────────────────────────────────────────────
