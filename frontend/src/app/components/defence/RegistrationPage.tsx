@@ -69,130 +69,163 @@ const EMPTY_FORM: RegistrationForm = {
   notes: "",
 };
 
-// Map layout constants
-const A_STALLS = ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14", "A15"];
-const B_STALLS = ["B1", "B2", "B3", "B4", "B5", "B6", "B7"];
-const C_STALLS = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"];
-const D_STALLS = ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10", "D11", "D12", "D13"];
-const ALL_MAP_STALLS = [...A_STALLS, ...B_STALLS, ...C_STALLS, ...D_STALLS];
+// New floor map stall numbers (matching floormap_new.png exactly)
+const ALL_MAP_STALLS = Array.from({ length: 33 }, (_, i) => String(i + 1));
 
 const SUPPORT = [
   "Audio-Visual Equipment", "Electricity Connection", "Exhibition Furniture", "High-Speed Internet",
   "Interpreter/Translation", "Meeting Arrangement", "Promotional Material Display", "Security Escort",
 ];
 
-// --- Merged Interactive Stall Map Component ---
-function StallMap({ 
-  selectedStalls, 
-  onSelect, 
-  booked 
-}: { 
-  selectedStalls: string[]; 
-  onSelect: (s: string) => void; 
-  booked: string[] 
-}) {
-  const stallColor = (id: string) => {
-    if (booked.includes(id)) return { bg: "#6b7280", text: "#9ca3af", cursor: "not-allowed", border: "1.5px solid #4b5563" };
-    if (selectedStalls.includes(id)) return { bg: "#C24F1D", text: "#fff", cursor: "pointer", border: "2px solid #ff6b35" };
-    if (id.startsWith("C")) return { bg: "#16a34a", text: "#fff", cursor: "pointer", border: "1.5px solid rgba(255,255,255,0.3)" };
-    return { bg: "#1d4ed8", text: "#fff", cursor: "pointer", border: "1.5px solid rgba(255,255,255,0.3)" };
-  };
+// ── SVG Floor Map — exact replica of floormap_new.png ───────────────────────
+// viewBox: 0 0 1000 360
+// Layout:
+//   Left col  : 26 27 28 29  (x≈5–75)
+//   Top row   : 25 24 … 15  (y≈5–80), gap, 14 13  (x≈815–938)
+//   Right col : 12 11 10    (x≈938, going down)
+//   Bottom row: 1 2 … 9    (y≈270–340, centered)
+//   Center    : 30 31 32 33 (y≈140–230)
 
-  const StallBtn = ({ id, w = 52, h = 36 }: { id: string; w?: number; h?: number }) => {
-    const s = stallColor(id);
-    const isBooked = booked.includes(id);
-    const isSelected = selectedStalls.includes(id);
-    
-    return (
-      <button
-        type="button"
-        onClick={() => !isBooked && onSelect(id)}
-        title={isBooked ? "Unavailable/Booked" : `Select stall ${id}`}
-        style={{
-          width: w, height: h, backgroundColor: s.bg, color: s.text,
-          fontSize: "10px", fontWeight: 700, border: s.border,
-          borderRadius: "4px", cursor: s.cursor, display: "flex", alignItems: "center",
-          justifyContent: "center", transition: "all 0.15s", flexShrink: 0,
-          boxShadow: isSelected ? "0 0 0 3px rgba(194,79,29,0.3)" : "none",
-        }}
-        onMouseEnter={(e) => { if (!isBooked && !isSelected) (e.currentTarget as HTMLElement).style.opacity = "0.8"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
-      >
-        {id}
-      </button>
-    );
+const SVG_STALLS: { id: string; x: number; y: number; w: number; h: number; label?: string }[] = [
+  // ── Left column (top→bottom) ──
+  { id: "26", x: 5,   y: 10,  w: 70, h: 72 },
+  { id: "27", x: 5,   y: 92,  w: 70, h: 80 },
+  { id: "28", x: 5,   y: 182, w: 70, h: 80 },
+  { id: "29", x: 5,   y: 272, w: 70, h: 75 },
+  // ── Top row (left→right: 25 → 15) ──
+  { id: "25", x: 85,  y: 5,   w: 58, h: 78 },
+  { id: "24", x: 148, y: 5,   w: 58, h: 78 },
+  { id: "23", x: 211, y: 5,   w: 58, h: 78 },
+  { id: "22", x: 274, y: 5,   w: 58, h: 78 },
+  { id: "21", x: 337, y: 5,   w: 58, h: 78 },
+  { id: "20", x: 400, y: 5,   w: 58, h: 78 },
+  { id: "19", x: 463, y: 5,   w: 58, h: 78 },
+  { id: "18", x: 526, y: 5,   w: 58, h: 78 },
+  { id: "17", x: 589, y: 5,   w: 58, h: 78 },
+  { id: "16", x: 652, y: 5,   w: 58, h: 78 },
+  { id: "15", x: 715, y: 5,   w: 58, h: 78 },
+  // top-right corner stalls
+  { id: "14", x: 807, y: 5,   w: 60, h: 78 },
+  { id: "13", x: 872, y: 5,   w: 60, h: 78 },
+  // ── Right column (top→bottom) ──
+  { id: "12", x: 937, y: 5,   w: 58, h: 78 },
+  { id: "11", x: 937, y: 93,  w: 58, h: 120 },
+  { id: "10", x: 937, y: 223, w: 58, h: 120 },
+  // ── Bottom row (left→right: 1 → 9) ──
+  { id: "1",  x: 210, y: 270, w: 66, h: 72 },
+  { id: "2",  x: 281, y: 270, w: 66, h: 72 },
+  { id: "3",  x: 352, y: 270, w: 66, h: 72 },
+  { id: "4",  x: 423, y: 270, w: 66, h: 72 },
+  { id: "5",  x: 494, y: 270, w: 66, h: 72 },
+  { id: "6",  x: 565, y: 270, w: 66, h: 72 },
+  { id: "7",  x: 636, y: 270, w: 66, h: 72 },
+  { id: "8",  x: 707, y: 270, w: 66, h: 72 },
+  { id: "9",  x: 778, y: 270, w: 66, h: 72 },
+  // ── Centre islands (30 31 32 33) ──
+  { id: "30", x: 212, y: 140, w: 88, h: 88 },
+  { id: "31", x: 393, y: 140, w: 88, h: 88 },
+  { id: "32", x: 574, y: 140, w: 88, h: 88 },
+  { id: "33", x: 759, y: 140, w: 88, h: 88 },
+];
+
+function FloorMapSVG({
+  selectedStalls,
+  onSelect,
+  booked,
+}: {
+  selectedStalls: string[];
+  onSelect: (id: string) => void;
+  booked: string[];
+}) {
+  const fillOf = (id: string) => {
+    if (booked.includes(id)) return { fill: "#6b7280", text: "#9ca3af", cursor: "not-allowed" };
+    if (selectedStalls.includes(id)) return { fill: "#C24F1D", text: "#fff", cursor: "pointer" };
+    return { fill: "#1d4ed8", text: "#fff", cursor: "pointer" };
   };
 
   return (
-    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 overflow-x-auto w-full">
-      <div className="flex justify-center gap-4 mb-4 flex-wrap">
+    <div className="w-full overflow-x-auto">
+      {/* Legend */}
+      <div className="flex justify-center gap-6 mb-3 flex-wrap">
         {[
-          { color: "#1d4ed8", label: "Available (A/B/D)" },
-          { color: "#16a34a", label: "Available (C — Centre)" },
+          { color: "#1d4ed8", label: "Available" },
           { color: "#C24F1D", label: "Selected" },
-          { color: "#6b7280", label: "Booked / Unavailable" },
+          { color: "#6b7280", label: "Booked" },
         ].map((l) => (
           <div key={l.label} className="flex items-center gap-2">
             <div style={{ width: 12, height: 12, backgroundColor: l.color, borderRadius: 2 }} />
-            <span className="text-[10px] text-gray-700 font-medium uppercase tracking-wider">{l.label}</span>
+            <span className="text-[11px] text-gray-700 font-medium uppercase tracking-wider">{l.label}</span>
           </div>
         ))}
       </div>
 
-      <div className="min-w-[480px] mx-auto w-max">
-        {/* Top row: Refreshments + B stalls + Refreshments */}
-        <div className="flex items-center gap-1 mb-2 justify-between">
-          <div className="bg-[#C24F1D] text-white text-[9px] font-bold p-1 rounded text-center w-[60px]">Refresh-<br />ments</div>
-          <div className="flex gap-1">
-            {[...B_STALLS].reverse().map((id) => <StallBtn key={id} id={id} w={48} h={32} />)}
-          </div>
-          <div className="bg-[#C24F1D] text-white text-[9px] font-bold p-1 rounded text-center w-[60px]">Refresh-<br />ments</div>
-        </div>
+      <svg
+        viewBox="0 0 1000 360"
+        width="100%"
+        style={{ minWidth: 480, maxWidth: "100%", display: "block" }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Background */}
+        <rect x="0" y="0" width="1000" height="360" fill="#f8fafc" rx="8" />
 
-        {/* Main hall */}
-        <div className="flex gap-2 items-stretch">
-          {/* Left column: Exit + B2B + D stalls */}
-          <div className="flex flex-col gap-1 items-center">
-            <div className="text-[9px] text-gray-600 font-bold mb-1" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Way to Exit ←</div>
-            <div className="bg-red-600 text-white text-[8px] font-bold py-1.5 px-1 rounded text-center w-[48px] mb-1">B2B<br/>Room</div>
-            {["D13","D12","D11","D10","D9","D8","D7","D6","D5"].map((id) => <StallBtn key={id} id={id} w={48} h={32} />)}
-          </div>
+        {/* Hall outline */}
+        <rect x="2" y="2" width="996" height="356" fill="none" stroke="#cbd5e1" strokeWidth="2" rx="6" />
 
-          {/* Centre C stalls grid */}
-          <div className="flex-1 flex flex-col items-center gap-2">
-            <div className="text-gray-400 text-lg">↓</div>
-            <div className="grid grid-cols-2 gap-1">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="contents">
-                  <StallBtn id={`C${11 + i}`} w={60} h={36} />
-                  <StallBtn id={`C${10 - i}`} w={60} h={36} />
-                </div>
-              ))}
-            </div>
-            <div className="text-gray-400 text-lg">↓</div>
-          </div>
+        {/* Stall Size label */}
+        <text x="500" y="125" textAnchor="middle" fontSize="15" fontWeight="700" fill="#334155">
+          Stall Size: 3×3 Mtr.
+        </text>
 
-          {/* Right column: B2B + A stalls */}
-          <div className="flex flex-col gap-1 items-center">
-            <div className="bg-red-600 text-white text-[8px] font-bold py-1.5 px-1 rounded text-center w-[48px] mb-1">B2B<br/>Room</div>
-            {["A15","A14","A13","A12","A11","A10","A9","A8","A7","A6","A5","A4","A3"].map((id) => <StallBtn key={id} id={id} w={48} h={32} />)}
-          </div>
-        </div>
+        {/* Entry marker */}
+        <polygon points="148,340 165,320 181,340" fill="#dc2626" />
+        <text x="163" y="358" textAnchor="middle" fontSize="11" fontWeight="700" fill="#dc2626">Entry</text>
 
-        {/* Bottom: Entry points & bottom stalls */}
-        <div className="flex justify-between items-end mt-2 gap-2">
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex gap-1">{["D4","D3","D2","D1"].map((id) => <StallBtn key={id} id={id} w={48} h={32} />)}</div>
-            <div className="text-[9px] text-gray-700 font-bold tracking-widest uppercase">← Entry 2</div>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-[9px] text-gray-700 font-bold tracking-widest uppercase">↑ Entry 1</div>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex gap-1">{["A1","A2"].map((id) => <StallBtn key={id} id={id} w={48} h={32} />)}</div>
-          </div>
-        </div>
-      </div>
+        {/* Emergency exit marker */}
+        <polygon points="852,340 869,320 886,340" fill="#dc2626" />
+        <text x="869" y="358" textAnchor="middle" fontSize="10" fontWeight="700" fill="#dc2626">Emergency Exit</text>
+
+        {/* Floor Map title */}
+        <text x="500" y="350" textAnchor="middle" fontSize="12" fontWeight="600" fill="#94a3b8">
+          Floor Map — Defence Expo
+        </text>
+
+        {/* Stalls */}
+        {SVG_STALLS.map(({ id, x, y, w, h }) => {
+          const s = fillOf(id);
+          const isBooked = booked.includes(id);
+          const isSelected = selectedStalls.includes(id);
+          return (
+            <g
+              key={id}
+              onClick={() => !isBooked && onSelect(id)}
+              style={{ cursor: s.cursor }}
+            >
+              <rect
+                x={x} y={y} width={w} height={h}
+                rx="4"
+                fill={s.fill}
+                stroke={isSelected ? "#ff6b35" : "rgba(255,255,255,0.25)"}
+                strokeWidth={isSelected ? 2.5 : 1.5}
+                opacity={isBooked ? 0.6 : 1}
+              />
+              {isSelected && (
+                <rect
+                  x={x - 2} y={y - 2} width={w + 4} height={h + 4}
+                  rx="6" fill="none" stroke="#ff6b35" strokeWidth="2" opacity="0.5"
+                />
+              )}
+              <text
+                x={x + w / 2} y={y + h / 2 + 1}
+                textAnchor="middle" dominantBaseline="middle"
+                fontSize="13" fontWeight="700" fill={s.text}
+                style={{ pointerEvents: "none", userSelect: "none" }}
+              >
+                {id}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
@@ -455,18 +488,30 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
         {step === 2 && (
           <div className="flex flex-col lg:flex-row gap-6">
             <div className="flex-1 bg-white rounded-2xl p-6 sm:p-10 border border-gray-200 shadow-sm">
-              <h3 className="text-xl font-extrabold text-[#0A1628] mb-2">8. Select Your Stalls</h3>
-              <p className="text-gray-500 text-sm mb-6 pb-4 border-b border-gray-100">Click on any available stall on the map to select it. You can book multiple 10×10 ft stalls.</p>
-              
+              <h3 className="text-xl font-extrabold text-[#0A1628] mb-2">8. Select Your Stall</h3>
+              <p className="text-gray-500 text-sm mb-4">Refer to the floor map below, then click on an available stall to select it.</p>
+
+              {/* Floor Map Reference Image */}
+              <div className="mb-6 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                <div className="bg-[#0A1628] text-white text-xs font-bold px-4 py-2 tracking-widest uppercase">Floor Map — Defence Attaché Roundtable 2026</div>
+                <img
+                  src={floorMapImg}
+                  alt="Floor Map — Defence Expo"
+                  className="w-full h-auto object-contain bg-white"
+                />
+              </div>
+
+              <p className="text-gray-500 text-sm mb-4 pb-4 border-b border-gray-100">Select your preferred stall from the interactive map below (blue = available, grey = booked).</p>
+
               {loading ? (
                 <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C24F1D]"></div></div>
               ) : fetchError ? (
                 <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{fetchError}</div>
               ) : (
-                <StallMap 
-                  selectedStalls={selectedStalls.map(s => s.stall_number)} 
-                  onSelect={handleMapSelect} 
-                  booked={bookedStallIds} 
+                <FloorMapSVG
+                  selectedStalls={selectedStalls.map(s => s.stall_number)}
+                  onSelect={handleMapSelect}
+                  booked={bookedStallIds}
                 />
               )}
               {errors.stallSelection && <p className="text-red-500 text-sm mt-3 text-center font-semibold">{errors.stallSelection}</p>}

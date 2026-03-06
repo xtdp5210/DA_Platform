@@ -18,8 +18,8 @@ class Stall(models.Model):
     ]
 
     stall_number = models.CharField(max_length=10, unique=True)
-    block = models.CharField(max_length=1, choices=BLOCK_CHOICES)
-    size = models.CharField(max_length=50, default="10x10 ft")
+    block = models.CharField(max_length=1, choices=BLOCK_CHOICES, blank=True, null=True)
+    size = models.CharField(max_length=50, default="3x3 Mtr.")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
 
