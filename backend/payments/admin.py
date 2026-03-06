@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, mark_safe
 from django.urls import reverse
 from .models import Payment, UpiPaymentSubmission
 from exhibitions.models import ExhibitorRegistration
@@ -194,13 +194,13 @@ class UpiPaymentSubmissionAdmin(admin.ModelAdmin):
 
     def verification_badge(self, obj):
         if obj.is_verified:
-            return format_html(
+            return mark_safe(
                 '<span style="background:#dcfce7;color:#15803d;padding:3px 10px;'
-                'border-radius:99px;font-size:11px;font-weight:700;">✅ Verified</span>'
+                'border-radius:99px;font-size:11px;font-weight:700;">&#9989; Verified</span>'
             )
-        return format_html(
+        return mark_safe(
             '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;'
-            'border-radius:99px;font-size:11px;font-weight:700;">⏳ Pending</span>'
+            'border-radius:99px;font-size:11px;font-weight:700;">&#9203; Pending</span>'
         )
     verification_badge.short_description = 'Status'
     verification_badge.admin_order_field = 'is_verified'
