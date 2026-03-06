@@ -1,4 +1,5 @@
 from django.contrib import admin, messages
+from django.conf import settings
 from django.utils import timezone
 from django.utils.html import format_html, mark_safe
 from django.urls import reverse
@@ -90,10 +91,42 @@ def verify_upi_payments(modeladmin, request, queryset):
             stall.status = 'booked'
             stall.save(update_fields=['status'])
 
-            # 4. Fire confirmation email (best-effort)
+            # 4. Create/update Payment record + generate receipt PDF
+            from .models import Payment
+            from .utils import generate_receipt_pdf
+            payment, _created = Payment.objects.get_or_create(
+                registration=reg,
+                defaults={'amount': reg.stall.price, 'status': 'Successful'},
+            )
+            if payment.status != 'Successful':
+                payment.status = 'Successful'
+                payment.save(update_fields=['status'])
+
+            pdf_file = generate_receipt_pdf(payment)
+            receipt_url = None
+            if pdf_file:
+                payment.receipt_pdf.save(pdf_file.name, pdf_file, save=True)
+                receipt_url = payment.receipt_pdf.url
+
+            # 5. Fire confirmation email (best-effort)
             try:
                 from exhibitions.email_utils import send_payment_confirmed_email
-                send_payment_confirmed_email(reg, receipt_url=None)
+                send_payment_confirmed_email(reg, receipt_url=receipt_url)
+                if pdf_file:
+                    from django.core.mail import EmailMultiAlternatives
+                    pdf_file.seek(0)
+                    attach_msg = EmailMultiAlternatives(
+                        subject="📎 Your Official Receipt — Defence Attaché Roundtable 2026",
+                        body=(
+                            f"Dear {reg.representative_name},\n\n"
+                            "Your UPI payment has been verified. Receipt is attached.\n\n"
+                            "Regards,\nOrganising Secretariat\nDefence Attaché Roundtable 2026"
+                        ),
+                        from_email=f"Defence Attaché Roundtable 2026 <{settings.DEFAULT_FROM_EMAIL}>",
+                        to=[reg.contact_email],
+                    )
+                    attach_msg.attach(pdf_file.name, pdf_file.read(), "application/pdf")
+                    attach_msg.send(fail_silently=True)
             except Exception as exc:
                 modeladmin.message_user(
                     request,

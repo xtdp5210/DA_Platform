@@ -34,5 +34,8 @@ urlpatterns = [
     path('payments/', include('payments.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve uploaded media (receipts etc.) in all environments.
+# On Render free tier the filesystem is ephemeral (wiped on redeploy), but
+# receipts stay accessible until the next deploy — and are also emailed.
+# For high-traffic production, swap this for an S3/Cloudflare R2 backend.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

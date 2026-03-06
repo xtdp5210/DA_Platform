@@ -118,16 +118,21 @@ class VerifyPaymentView(views.APIView):
             stall.status = 'booked'
             stall.save()
 
-            # Generate PDF in memory only — never write to disk.
-            # Render's free tier uses an ephemeral filesystem: any file saved to
-            # disk is wiped on the next redeploy, making stored URLs permanently
-            # broken. The PDF is delivered exclusively via email attachment.
+            # Generate PDF and save to payment.receipt_pdf so the
+            # dashboard "Download Receipt" button works immediately.
+            # Also email the PDF as an attachment.
             pdf_file = generate_receipt_pdf(payment)
+            receipt_url = None
+
+            if pdf_file:
+                payment.receipt_pdf.save(pdf_file.name, pdf_file, save=True)
+                receipt_url = request.build_absolute_uri(payment.receipt_pdf.url)
 
             try:
                 from django.core.mail import EmailMultiAlternatives
-                send_payment_confirmed_email(registration, receipt_url=None)
+                send_payment_confirmed_email(registration, receipt_url=receipt_url)
                 if pdf_file:
+                    pdf_file.seek(0)  # rewind after .save()
                     to_emails = list({registration.contact_email, request.user.email})
                     attach_msg = EmailMultiAlternatives(
                         subject="📎 Your Official Receipt — Defence Attaché Roundtable 2026",
@@ -147,7 +152,7 @@ class VerifyPaymentView(views.APIView):
 
             return Response({
                 "message": "Payment successful! Stall officially booked and receipt emailed.",
-                "receipt_url": None   # No persistent disk on free Render — delivered via email
+                "receipt_url": receipt_url,
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
