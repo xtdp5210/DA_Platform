@@ -39,7 +39,7 @@ def reject_registrations(modeladmin, request, queryset):
 @admin.register(Stall)
 class StallAdmin(admin.ModelAdmin):
     list_display = ('stall_number', 'block', 'size', 'price', 'status')
-    list_filter = ('status', 'block')
+    list_filter = ('status',)
     search_fields = ('stall_number',)
     list_editable = ('status', 'price')
 

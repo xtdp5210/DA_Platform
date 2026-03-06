@@ -140,7 +140,7 @@ def generate_upi_qr(registration) -> dict:
         "qr_code"         : f"data:image/png;base64,{qr_b64}",
         "amount"          : amount,
         "stall_number"    : registration.stall.stall_number,
-        "block"           : registration.stall.block,
+        "block"           : registration.stall.block or "",
         "company_name"    : registration.company_name,
         "transaction_note": txn_note,
         "expires_at"      : timestamp + QR_VALIDITY_SECONDS,

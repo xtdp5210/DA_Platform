@@ -33,7 +33,7 @@ class PaymentAdmin(admin.ModelAdmin):
     get_stall.short_description = 'Stall'
 
     def get_block(self, obj):
-        return obj.registration.stall.block
+        return obj.registration.stall.block or '—'
     get_block.short_description = 'Block'
 
     def amount_inr(self, obj):
@@ -142,7 +142,7 @@ class UpiPaymentSubmissionAdmin(admin.ModelAdmin):
         'submitted_at',
         'verified_by',
     )
-    list_filter  = ('is_verified', 'submitted_at', 'registration__stall__block')
+    list_filter  = ('is_verified', 'submitted_at')
     search_fields = (
         'utr_number',
         'payer_upi_id',
@@ -215,10 +215,15 @@ class UpiPaymentSubmissionAdmin(admin.ModelAdmin):
 
     def stall_info(self, obj):
         stall = obj.registration.stall
+        if stall.block:
+            return format_html(
+                '<span style="font-weight:700;color:#C24F1D">{}</span>'
+                '<br><span style="font-size:11px;color:#6b7280">Block {}</span>',
+                stall.stall_number, stall.block,
+            )
         return format_html(
-            '<span style="font-weight:700;color:#C24F1D">{}</span>'
-            '<br><span style="font-size:11px;color:#6b7280">Block {}</span>',
-            stall.stall_number, stall.block,
+            '<span style="font-weight:700;color:#C24F1D">{}</span>',
+            stall.stall_number,
         )
     stall_info.short_description = 'Stall'
 
@@ -267,7 +272,7 @@ class UpiPaymentSubmissionAdmin(admin.ModelAdmin):
               </tr>
               <tr style="background:#f8fafc">
                 <td style="padding:6px 12px;font-weight:700;color:#6b7280">Stall</td>
-                <td style="padding:6px 12px"><strong>{}</strong> — Block {}, {}</td>
+                <td style="padding:6px 12px"><strong>{}</strong>{}, {}</td>
               </tr>
               <tr>
                 <td style="padding:6px 12px;font-weight:700;color:#6b7280">Stall Price</td>
@@ -286,7 +291,7 @@ class UpiPaymentSubmissionAdmin(admin.ModelAdmin):
             reg.company_name,
             reg.representative_name, reg.contact_email,
             reg.contact_phone,
-            stall.stall_number, stall.block, stall.size,
+            stall.stall_number, f' — Block {stall.block}' if stall.block else '', stall.size,
             f'{stall.price:,.2f}',
             reg.get_approval_status_display(),
             reg.get_payment_status_display(),
