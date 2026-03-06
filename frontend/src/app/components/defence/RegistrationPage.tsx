@@ -450,9 +450,9 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
         {/* <p className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide leading-snug">
           🎉 All Stalls Are Available!
         </p> */}
-        <p className="text-green-100 text-base sm:text-lg font-semibold mt-2">
+        {/* <p className="text-green-100 text-base sm:text-lg font-semibold mt-2">
           Registration process will begin shortly — stay with us!
-        </p>
+        </p> */}
       </div>
 
       <div className="flex-1 w-full max-w-5xl mx-auto px-4 py-10">
