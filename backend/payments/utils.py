@@ -3,27 +3,44 @@ import hmac
 import hashlib
 import time
 import base64
+import logging
 from io import BytesIO
+from urllib.parse import quote as urlquote
 from django.template.loader import get_template
 from django.conf import settings
 from xhtml2pdf import pisa
 from django.core.files.base import ContentFile
+
+logger = logging.getLogger(__name__)
 
 # QR validity window — 10 minutes.  After this the timer on the frontend
 # expires and the user must click "Pay Now" again to get a fresh QR.
 QR_VALIDITY_SECONDS = 600
 
 
-def _bank_details() -> tuple[str, str, str]:
+def _bank_details() -> tuple[str, str, str, str]:
     """
     Read UPI / bank destination from Django settings (backed by env vars).
-    Returns (account_no, ifsc, account_name).
+    Returns (vpa, account_no, ifsc, account_name).
 
-    Bank details are NOT secrets — they appear on every RRU cheque / demand
-    draft.  Storing them in env vars means you can change banks without a
-    code change or git commit.
+    UPI_VPA is the registered Virtual Payment Address (e.g. rru.da@hdfcbank).
+    If UPI_VPA is not set the system warns loudly and falls back to the
+    accountno@ifsc.ifsc.npci format — this fallback will be REFUNDED by
+    Google Pay / PhonePe unless HDFC has explicitly enabled UPI on the account.
     """
+    vpa = getattr(settings, 'UPI_VPA', '').strip()
+    if not vpa:
+        # Build fallback VPA from account number + IFSC (NPCI technical format).
+        # WARNING: payments WILL be refunded unless HDFC enables UPI collections.
+        vpa = f"{settings.UPI_ACCOUNT_NO}@{settings.UPI_IFSC}.ifsc.npci"
+        logger.warning(
+            "UPI_VPA is not configured.  Falling back to account-number VPA (%s). "
+            "Google Pay / PhonePe will REFUND payments unless HDFC enables UPI "
+            "collection on this account.  Set UPI_VPA in your env vars.",
+            vpa,
+        )
     return (
+        vpa,
         settings.UPI_ACCOUNT_NO,
         settings.UPI_IFSC,
         settings.UPI_ACCOUNT_NAME,
@@ -81,7 +98,7 @@ def generate_upi_qr(registration) -> dict:
     """
     import qrcode   # imported here so it is only required when the feature is used
 
-    account_no, ifsc, account_name = _bank_details()
+    vpa, account_no, ifsc, account_name = _bank_details()
 
     amount    = str(registration.stall.price)
     reg_id    = registration.id
@@ -94,15 +111,15 @@ def generate_upi_qr(registration) -> dict:
     # - HMAC proves this note was server-issued; forged notes won't match the pattern
     txn_note = f"DAR2026_REG{reg_id}_STL{registration.stall.stall_number}_{token}"
 
-    # NPCI-standard UPI deep-link.  pa= uses account@ifsc.ifsc.npci format for
-    # account-number-based transfers (no VPA needed).
+    # URL-encode payee name and transaction note so spaces / special chars
+    # don't break the QR deep-link on any UPI app.
     upi_url = (
         f"upi://pay"
-        f"?pa={account_no}@{ifsc}.ifsc.npci"
-        f"&pn={account_name}"
+        f"?pa={urlquote(vpa, safe='@.')}"
+        f"&pn={urlquote(account_name)}"
         f"&am={amount}"
         f"&cu=INR"
-        f"&tn={txn_note}"
+        f"&tn={urlquote(txn_note, safe='_')}"
     )
 
     qr = qrcode.QRCode(
@@ -128,7 +145,8 @@ def generate_upi_qr(registration) -> dict:
         "transaction_note": txn_note,
         "expires_at"      : timestamp + QR_VALIDITY_SECONDS,
         "valid_for_seconds": QR_VALIDITY_SECONDS,
-        # Bank details to display in the UI as fallback (for manual NEFT)
+        # Bank details displayed in the UI as fallback (for manual NEFT)
+        "upi_vpa"         : vpa,
         "bank_account_no" : account_no,
         "bank_ifsc"       : ifsc,
         "bank_name"       : account_name,

@@ -1,5 +1,5 @@
 ﻿import { useNavigate } from "react-router-dom";
-import floorMapImg from "../../../Assets/floormap.png";
+import floorMapImg from "../../../Assets/floormap_new.png";
 import { IndianBorder } from "./IndianBorder";
 
 export default function FloorMapPage() {

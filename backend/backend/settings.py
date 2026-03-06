@@ -45,9 +45,17 @@ RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', default='')
 # but keeping them in env vars lets you change banks without a code redeploy.
 #
 # Add to .env (local) and Render → Environment → Environment Variables:
-#   UPI_ACCOUNT_NO   = 50100238058183
+#   UPI_VPA          = rru.da@hdfcbank        ← preferred: your registered UPI ID
+#   UPI_ACCOUNT_NO   = 50100238058183          ← shown as fallback / NEFT details only
 #   UPI_IFSC         = HDFC0009297
 #   UPI_ACCOUNT_NAME = RASHTRIYA RAKSHA UNIVERSITY
+#
+# WHY UPI_VPA is required:
+#   The format  accountno@ifsc.ifsc.npci  is a valid NPCI technical address but
+#   Google Pay / PhonePe will REFUND the payment if the account is not actively
+#   registered for UPI collections.  A proper VPA (obtained from HDFC NetBanking
+#   → VPA Management, or by calling 1800-202-6161) solves this instantly.
+UPI_VPA          = env('UPI_VPA',          default='')   # Set this in .env / Render!
 UPI_ACCOUNT_NO   = env('UPI_ACCOUNT_NO',   default='50100238058183')
 UPI_IFSC         = env('UPI_IFSC',         default='HDFC0009297')
 UPI_ACCOUNT_NAME = env('UPI_ACCOUNT_NAME', default='RASHTRIYA RAKSHA UNIVERSITY')
