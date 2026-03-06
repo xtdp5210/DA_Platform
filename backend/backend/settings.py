@@ -39,6 +39,19 @@ RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
 RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', default='')
 
+# ── UPI / Bank Transfer Destination ────────────────────────────────────────────
+# These are the bank details that appear inside every generated UPI QR code.
+# They are NOT secrets (they appear on every cheque / demand draft RRU issues)
+# but keeping them in env vars lets you change banks without a code redeploy.
+#
+# Add to .env (local) and Render → Environment → Environment Variables:
+#   UPI_ACCOUNT_NO   = 50100238058183
+#   UPI_IFSC         = HDFC0009297
+#   UPI_ACCOUNT_NAME = RASHTRIYA RAKSHA UNIVERSITY
+UPI_ACCOUNT_NO   = env('UPI_ACCOUNT_NO',   default='50100238058183')
+UPI_IFSC         = env('UPI_IFSC',         default='HDFC0009297')
+UPI_ACCOUNT_NAME = env('UPI_ACCOUNT_NAME', default='RASHTRIYA RAKSHA UNIVERSITY')
+
 AUTH_USER_MODEL = 'users.CustomUser'
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
@@ -107,28 +120,34 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+#
+# LOCAL DEV:  add  USE_SQLITE=True  to your .env to use the repo's
+#             db.sqlite3 file so you never need a local Postgres instance.
+# PRODUCTION: leave USE_SQLITE unset (or False) — Neon PostgreSQL is used.
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-        # Neon requires SSL + channel binding (SCRAM authentication security)
-        'OPTIONS': {
-            'sslmode': env('DB_SSLMODE', default='require'),
-            'channel_binding': env('DB_CHANNEL_BINDING', default='require'),
-        },
+if env.bool('USE_SQLITE', default=False):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),
+            # Neon requires SSL + channel binding (SCRAM authentication security)
+            'OPTIONS': {
+                'sslmode': env('DB_SSLMODE', default='require'),
+                'channel_binding': env('DB_CHANNEL_BINDING', default='require'),
+            },
+        }
+    }
 
 
 
@@ -179,7 +198,14 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 ])
 CORS_ALLOW_CREDENTIALS = True
 
-EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+# ── Email ─────────────────────────────────────────────────────────────────────
+# Local dev: print emails to the terminal console so you don't need SendGrid.
+# Production: anymail/SendGrid sends real emails.
+if env.bool('USE_SQLITE', default=False):
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+
 ANYMAIL = {
     'SENDGRID_API_KEY': env('SENDGRID_API_KEY', default=''),
 }

@@ -6,9 +6,12 @@ import razorpay
 import json
 from exhibitions.models import ExhibitorRegistration, Stall
 from exhibitions.email_utils import send_payment_confirmed_email
-from .models import Payment
-from .serializers import CreateOrderSerializer, VerifyPaymentSerializer
-from .utils import generate_receipt_pdf
+from .models import Payment, UpiPaymentSubmission
+from .serializers import (
+    CreateOrderSerializer, VerifyPaymentSerializer,
+    GenerateQRSerializer, SubmitUtrSerializer,
+)
+from .utils import generate_receipt_pdf, generate_upi_qr
 
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
@@ -214,3 +217,154 @@ class RazorpayWebhookView(views.APIView):
                 pass 
 
         return Response(status=status.HTTP_200_OK)
+
+
+# ── UPI QR Code Views ────────────────────────────────────────────────────────────
+
+class GenerateUpiQRView(views.APIView):
+    """
+    GET /payments/generate_upi_qr?registration_id=<id>
+
+    Returns a fresh, time-limited, HMAC-signed UPI QR code image (base64).
+    Amount is read server-side from the stall price — the client cannot
+    supply or modify it.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = GenerateQRSerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        registration_id = serializer.validated_data['registration_id']
+
+        try:
+            registration = ExhibitorRegistration.objects.select_related(
+                'stall', 'user'
+            ).get(id=registration_id, user=request.user)
+        except ExhibitorRegistration.DoesNotExist:
+            return Response(
+                {"error": "Registration not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if registration.approval_status != 'approved':
+            return Response(
+                {"error": "Only approved registrations can generate a payment QR."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if registration.payment_status == 'paid':
+            return Response(
+                {"error": "This registration is already paid."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        qr_data = generate_upi_qr(registration)
+        return Response(qr_data, status=status.HTTP_200_OK)
+
+
+class SubmitUpiPaymentView(views.APIView):
+    """
+    POST /payments/submit_upi_payment
+
+    Called after the user has scanned the QR and completed the UPI transfer.
+    Stores the UTR number and marks the registration as 'processing'.
+    The accounts department then verifies the UTR in the bank statement
+    and uses the admin action to confirm the payment.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = SubmitUtrSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        registration_id  = serializer.validated_data['registration_id']
+        utr_number       = serializer.validated_data['utr_number']  # already normalised to uppercase in serializer
+        payer_upi_id     = serializer.validated_data.get('payer_upi_id', '')
+        transaction_note = serializer.validated_data.get('transaction_note', '')
+
+        try:
+            registration = ExhibitorRegistration.objects.select_related(
+                'stall'
+            ).get(id=registration_id, user=request.user)
+        except ExhibitorRegistration.DoesNotExist:
+            return Response(
+                {"error": "Registration not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if registration.approval_status != 'approved':
+            return Response(
+                {"error": "Only approved registrations may submit a payment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if registration.payment_status == 'paid':
+            return Response(
+                {"error": "This registration is already paid."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if registration.payment_status == 'processing':
+            return Response(
+                {"error": "A payment submission already exists for this registration. "
+                          "Please contact support if you need to update your UTR."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ── UTR Uniqueness Guard ───────────────────────────────────────────────
+        # A UTR (bank transaction reference) is globally unique — each bank
+        # transfer has exactly one UTR.  If the same UTR appears twice, either:
+        #   a) the user is trying to use one payment to unlock two stalls, or
+        #   b) it is a data-entry error.
+        # We reject in either case; the accounts dept can override via admin.
+        utr_number = serializer.validated_data['utr_number']
+        if UpiPaymentSubmission.objects.filter(utr_number=utr_number).exists():
+            import logging
+            logging.getLogger(__name__).warning(
+                "Duplicate UTR submission attempt: UTR=%s REG=%s USER=%s",
+                utr_number, registration_id, request.user.id,
+            )
+            return Response(
+                {"error": "This UTR number has already been submitted. "
+                          "If you believe this is an error, contact da@rru.ac.in."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # Persist the UPI payment record.
+        # Amount is locked to the stall price — never taken from the request body.
+        UpiPaymentSubmission.objects.create(
+            registration     = registration,
+            amount           = registration.stall.price,
+            utr_number       = utr_number,
+            payer_upi_id     = payer_upi_id,
+            transaction_note = transaction_note,
+        )
+
+        # Mark as 'processing' so the accounts dept can see it in admin
+        registration.payment_status = 'processing'
+        registration.save(update_fields=['payment_status'])
+
+        import logging
+        logging.getLogger(__name__).info(
+            "UPI payment submitted: REG=%s COMPANY=%s UTR=%s AMOUNT=%s",
+            registration.id,
+            registration.company_name,
+            utr_number,
+            registration.stall.price,
+        )
+
+        return Response(
+            {
+                "message": (
+                    "Payment reference submitted successfully. "
+                    "Our accounts department will verify your transfer within 1 business day "
+                    "and you will receive a confirmation email."
+                ),
+                "utr_number"   : utr_number,
+                "amount"       : str(registration.stall.price),
+            },
+            status=status.HTTP_201_CREATED,
+        )

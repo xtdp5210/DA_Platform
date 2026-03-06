@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../store/authStore";
 import { getMyBookings } from "../../../api/exhibitions";
-import { createOrder, verifyPayment } from "../../../api/payments";
+import { generateUpiQR, submitUpiPayment, type UpiQRResponse } from "../../../api/payments";
 
-declare global { interface Window { Razorpay: any; } }
 
 type ApprovalStatus = "pending_review" | "approved" | "rejected";
 type PaymentStatus  = "unpaid" | "processing" | "paid";
@@ -92,6 +91,20 @@ const DashboardPage = () => {
   const [bookingsLoading, setBookingsLoading] = useState(true);
   const [payingId, setPayingId] = useState<number | null>(null);
 
+  // UPI QR modal state
+  const [qrModalOpen, setQrModalOpen]     = useState(false);
+  const [qrActiveId, setQrActiveId]       = useState<number | null>(null);
+  const [qrData, setQrData]               = useState<UpiQRResponse | null>(null);
+  const [qrLoading, setQrLoading]         = useState(false);
+  const [qrError, setQrError]             = useState("");
+  const [utrValue, setUtrValue]           = useState("");
+  const [payerUpi, setPayerUpi]           = useState("");
+  const [submittingUtr, setSubmittingUtr] = useState(false);
+  const [utrError, setUtrError]           = useState("");
+  const [utrSuccess, setUtrSuccess]       = useState(false);
+  const [countdown, setCountdown]         = useState(0);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const fetchBookings = useCallback(async () => {
     try {
       const { data } = await getMyBookings();
@@ -105,51 +118,85 @@ const DashboardPage = () => {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  const loadRazorpay = () => new Promise<boolean>((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+  // ── QR countdown ticker ────────────────────────────────────────────────────
+  const startCountdown = (expiresAt: number) => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    const tick = () => {
+      const remaining = Math.max(0, expiresAt - Math.floor(Date.now() / 1000));
+      setCountdown(remaining);
+      if (remaining === 0 && countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+    };
+    tick();
+    countdownRef.current = setInterval(tick, 1000);
+  };
 
-  const handlePayNow = async (booking: Booking) => {
+  const closeQrModal = () => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setQrModalOpen(false);
+    setQrData(null);
+    setQrActiveId(null);
+    setQrError("");
+    setUtrValue("");
+    setPayerUpi("");
+    setUtrError("");
+    setUtrSuccess(false);
+    setCountdown(0);
+  };
+
+  const handleOpenQR = async (booking: Booking) => {
+    setQrModalOpen(true);
+    setQrActiveId(booking.id);
+    setQrLoading(true);
+    setQrData(null);
+    setQrError("");
+    setUtrValue("");
+    setPayerUpi("");
+    setUtrError("");
+    setUtrSuccess(false);
     setPayingId(booking.id);
     try {
-      const loaded = await loadRazorpay();
-      if (!loaded) { alert("Failed to load payment gateway."); return; }
-
-      const { data: order } = await createOrder(booking.id);
-
-      const options = {
-        key: order.key_id,
-        amount: order.amount,
-        currency: "INR",
-        name: "Defence Tech Exhibition",
-        description: `Stall ${booking.stall_number} - Block ${booking.block}`,
-        order_id: order.razorpay_order_id,
-        handler: async (response: any) => {
-          try {
-            await verifyPayment({
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              registration_id: booking.id,
-            });
-            await fetchBookings();
-          } catch { alert("Payment verification failed. Contact support."); }
-        },
-        prefill: { email: user?.email },
-        theme: { color: "#C24F1D" }, // Match brand color
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error("Payment error", err);
-      alert("Unable to initiate payment. Please try again.");
+      const { data } = await generateUpiQR(booking.id);
+      setQrData(data);
+      startCountdown(data.expires_at);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || "Failed to generate QR. Please try again.";
+      setQrError(msg);
     } finally {
+      setQrLoading(false);
       setPayingId(null);
+    }
+  };
+
+  const handleSubmitUtr = async () => {
+    if (!utrValue.trim() || utrValue.trim().length < 8) {
+      setUtrError("Enter a valid UTR / transaction reference number (at least 8 characters).");
+      return;
+    }
+    if (!qrActiveId || !qrData) return;
+    setSubmittingUtr(true);
+    setUtrError("");
+    try {
+      await submitUpiPayment({
+        registration_id : qrActiveId,
+        utr_number      : utrValue.trim(),
+        payer_upi_id    : payerUpi.trim(),
+        transaction_note: qrData.transaction_note,
+      });
+      setUtrSuccess(true);
+      await fetchBookings();
+    } catch (err: any) {
+      const data = err?.response?.data;
+      setUtrError(
+        data?.utr_number?.[0] ||
+        data?.error          ||
+        data?.detail         ||
+        "Submission failed. Please try again.",
+      );
+    } finally {
+      setSubmittingUtr(false);
     }
   };
 
@@ -341,16 +388,23 @@ const DashboardPage = () => {
                           Awaiting Admin Approval
                         </div>
                       ) : canPay ? (
-                        <button onClick={() => handlePayNow(booking)} disabled={payingId === booking.id}
-                          className="w-full bg-[#C24F1D] hover:bg-[#a64015] disabled:bg-[#C24F1D]/60 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md shadow-orange-900/20 active:scale-95 flex justify-center items-center gap-2">
+                        <button
+                          onClick={() => handleOpenQR(booking)}
+                          disabled={payingId === booking.id}
+                          className="w-full bg-[#C24F1D] hover:bg-[#a64015] disabled:bg-[#C24F1D]/60 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-md shadow-orange-900/20 active:scale-95 flex justify-center items-center gap-2"
+                        >
                           {payingId === booking.id ? (
-                            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Connecting Gateway...</>
+                            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating QR...</>
                           ) : (
                             <>
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                              {/* QR icon */}
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+                                <rect x="3" y="3" width="7" height="7" rx="1" />
+                                <rect x="14" y="3" width="7" height="7" rx="1" />
+                                <rect x="3" y="14" width="7" height="7" rx="1" />
+                                <path strokeLinecap="round" d="M14 14h2m3 0h2M14 17v2m0 3h2m3-3h2m0 3h-2" />
                               </svg>
-                              PAY NOW TO CONFIRM
+                              PAY NOW — SCAN QR
                             </>
                           )}
                         </button>
@@ -363,6 +417,199 @@ const DashboardPage = () => {
           )}
         </section>
       </div>
+
+      {/* ── UPI QR Payment Modal ──────────────────────────────────────────── */}
+      {qrModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+          onClick={(e) => { if (e.target === e.currentTarget && !submittingUtr) closeQrModal(); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+
+            {/* Modal header */}
+            <div className="bg-[#0A1628] px-6 py-4 flex items-center justify-between">
+              <div>
+                <p className="text-[#C9933A] text-[10px] font-bold tracking-[0.2em] uppercase">Defence Attaché Roundtable 2026</p>
+                <p className="text-white font-bold text-base">Pay via UPI / Bank Transfer</p>
+              </div>
+              {!submittingUtr && (
+                <button
+                  onClick={closeQrModal}
+                  className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <div className="p-6">
+
+              {/* ── SUCCESS STATE ── */}
+              {utrSuccess ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-extrabold text-gray-900 mb-2">Reference Submitted!</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                    Our accounts department will verify your UTR against the bank statement and confirm your stall within <strong>1 business day</strong>. You will receive a confirmation email.
+                  </p>
+                  <button
+                    onClick={closeQrModal}
+                    className="bg-[#0A1628] hover:bg-gray-800 text-white font-bold px-8 py-2.5 rounded-xl text-sm transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+
+              ) : qrLoading ? (
+                /* ── LOADING ── */
+                <div className="flex flex-col items-center py-12 gap-4">
+                  <div className="w-10 h-10 border-4 border-gray-200 border-t-[#C24F1D] rounded-full animate-spin" />
+                  <p className="text-gray-500 text-sm font-medium">Generating secure QR code…</p>
+                </div>
+
+              ) : qrError ? (
+                /* ── ERROR ── */
+                <div className="text-center py-8">
+                  <p className="text-red-600 font-semibold mb-4">{qrError}</p>
+                  <button
+                    onClick={() => { setQrError(''); qrActiveId && handleOpenQR(bookings.find(b => b.id === qrActiveId)!); }}
+                    className="bg-[#C24F1D] hover:bg-[#a64015] text-white font-bold px-6 py-2.5 rounded-xl text-sm"
+                  >
+                    Retry
+                  </button>
+                </div>
+
+              ) : qrData ? (
+                /* ── QR CODE + UTR FORM ── */
+                <>
+                  {/* Amount badge */}
+                  <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-5">
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-500 tracking-widest uppercase">Stall {qrData.stall_number} — Block {qrData.block}</p>
+                      <p className="text-2xl font-black text-[#0A1628]">₹{Number(qrData.amount).toLocaleString('en-IN')}</p>
+                    </div>
+                    {/* Countdown */}
+                    <div className={`text-center ${countdown < 60 ? 'text-red-600' : 'text-gray-600'}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider">Expires in</p>
+                      <p className="text-xl font-black tabular-nums">
+                        {String(Math.floor(countdown / 60)).padStart(2, '0')}:{String(countdown % 60).padStart(2, '0')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {countdown === 0 ? (
+                    <div className="text-center bg-red-50 border border-red-200 rounded-xl p-4 mb-5">
+                      <p className="text-red-700 font-semibold text-sm">QR code has expired.</p>
+                      <button onClick={() => handleOpenQR(bookings.find(b => b.id === qrActiveId)!)} className="mt-2 text-sm font-bold text-red-700 underline">
+                        Generate a new QR
+                      </button>
+                    </div>
+                  ) : (
+                    /* QR image */
+                    <div className="flex flex-col items-center mb-5">
+                      <div className="border-4 border-[#0A1628] rounded-xl p-2 bg-white shadow-lg">
+                        <img
+                          src={qrData.qr_code}
+                          alt="UPI Payment QR Code"
+                          className="w-52 h-52 object-contain"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2 font-medium">Scan with GPay · PhonePe · Paytm · Any UPI app</p>
+                    </div>
+                  )}
+
+                  {/* Manual bank details (NEFT fallback) */}
+                  <details className="mb-5 border border-gray-200 rounded-xl overflow-hidden">
+                    <summary className="px-4 py-2.5 text-xs font-bold text-gray-600 cursor-pointer select-none hover:bg-gray-50 uppercase tracking-wider">
+                      Can't scan? — Manual bank transfer details
+                    </summary>
+                    <div className="px-4 py-3 bg-gray-50 space-y-2">
+                      {[
+                        { label: 'Account Name',   value: qrData.bank_name },
+                        { label: 'Account Number', value: qrData.bank_account_no },
+                        { label: 'IFSC Code',      value: qrData.bank_ifsc },
+                        { label: 'Bank',           value: 'HDFC Bank' },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex justify-between items-center">
+                          <span className="text-xs font-semibold text-gray-500">{label}</span>
+                          <code className="text-xs bg-white border border-gray-200 px-2 py-0.5 rounded font-mono select-all text-gray-800">{value}</code>
+                        </div>
+                      ))}
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+                        ⚠ Use <strong>{qrData.transaction_note.substring(0, 24)}…</strong> as the payment remark/narration so our accounts team can identify your transfer.
+                      </p>
+                    </div>
+                  </details>
+
+                  {/* UTR input section */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <p className="text-xs font-bold text-gray-700 tracking-wide uppercase mb-3">After Payment — Enter Transaction Reference</p>
+
+                    <div className="mb-3">
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                        UTR / Reference Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={utrValue}
+                        onChange={(e) => { setUtrValue(e.target.value); setUtrError(''); }}
+                        placeholder="e.g. 423917263845"
+                        className={`w-full px-3 py-2.5 rounded-lg border text-sm font-mono outline-none transition-all focus:ring-2 focus:ring-[#C24F1D] ${
+                          utrError ? 'border-red-400' : 'border-gray-300'
+                        }`}
+                      />
+                      <p className="text-[11px] text-gray-400 mt-1">Find this in your banking app under transaction history.</p>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-[11px] font-semibold text-gray-600 mb-1">Your UPI ID (optional)</label>
+                      <input
+                        type="text"
+                        value={payerUpi}
+                        onChange={(e) => setPayerUpi(e.target.value)}
+                        placeholder="yourname@bank"
+                        className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm outline-none transition-all focus:ring-2 focus:ring-[#C24F1D]"
+                      />
+                    </div>
+
+                    {utrError && (
+                      <p className="text-red-600 text-xs font-semibold bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">{utrError}</p>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeQrModal}
+                        disabled={submittingUtr}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-sm transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSubmitUtr}
+                        disabled={submittingUtr || countdown === 0}
+                        className="flex-[2] bg-[#C24F1D] hover:bg-[#a64015] disabled:bg-[#C24F1D]/60 text-white font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2"
+                      >
+                        {submittingUtr ? (
+                          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Submitting…</>
+                        ) : (
+                          '✓ I\'ve Paid — Confirm'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
