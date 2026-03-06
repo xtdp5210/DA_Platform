@@ -491,17 +491,7 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
               <h3 className="text-xl font-extrabold text-[#0A1628] mb-2">8. Select Your Stall</h3>
               <p className="text-gray-500 text-sm mb-4">Refer to the floor map below, then click on an available stall to select it.</p>
 
-              {/* Floor Map Reference Image */}
-              <div className="mb-6 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                <div className="bg-[#0A1628] text-white text-xs font-bold px-4 py-2 tracking-widest uppercase">Floor Map — Defence Attaché Roundtable 2026</div>
-                <img
-                  src={floorMapImg}
-                  alt="Floor Map — Defence Expo"
-                  className="w-full h-auto object-contain bg-white"
-                />
-              </div>
-
-              <p className="text-gray-500 text-sm mb-4 pb-4 border-b border-gray-100">Select your preferred stall from the interactive map below (blue = available, grey = booked).</p>
+              <p className="text-gray-500 text-sm mb-4 pb-4 border-b border-gray-100">Select your preferred stall from the interactive map below (blue = available, orange = selected, grey = booked).</p>
 
               {loading ? (
                 <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C24F1D]"></div></div>
