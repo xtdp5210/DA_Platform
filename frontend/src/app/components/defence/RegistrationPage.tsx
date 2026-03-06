@@ -77,55 +77,95 @@ const SUPPORT = [
   "Interpreter/Translation", "Meeting Arrangement", "Promotional Material Display", "Security Escort",
 ];
 
-// ── SVG Floor Map — exact replica of floormap_new.png ───────────────────────
-// viewBox: 0 0 1000 360
-// Layout:
-//   Left col  : 26 27 28 29  (x≈5–75)
-//   Top row   : 25 24 … 15  (y≈5–80), gap, 14 13  (x≈815–938)
-//   Right col : 12 11 10    (x≈938, going down)
-//   Bottom row: 1 2 … 9    (y≈270–340, centered)
-//   Center    : 30 31 32 33 (y≈140–230)
+// ── SVG Floor Map — pixel-perfect replica of floormap_new.png ────────────────
+// viewBox 0 0 1200 520  (wider + taller for proper proportions)
+//
+// Stall 26 (top-left)  and  Stall 12 (top-right) are 3×6 Mtr (double height)
+// All other stalls are 3×3 Mtr
+//
+// Layout (matching reference):
+//   Top-left corner : 26 (tall, 3×6)          Top-right corner : 12 (tall, 3×6)
+//   Top row         : 25 24 23 22 21 20 19 18 17 16 15 14 13
+//   Left column     : 27 28 29
+//   Right column    : 11 10
+//   Centre islands  : 30 31 32 33
+//   Bottom row      : 1 2 3 4 5 6 7 8 9
+//   Entry ▲ left of stall 1   |   Emergency Exit ▶ right of stall 9
 
-const SVG_STALLS: { id: string; x: number; y: number; w: number; h: number; label?: string }[] = [
-  // ── Left column (top→bottom) ──
-  { id: "26", x: 5,   y: 10,  w: 70, h: 72 },
-  { id: "27", x: 5,   y: 92,  w: 70, h: 80 },
-  { id: "28", x: 5,   y: 182, w: 70, h: 80 },
-  { id: "29", x: 5,   y: 272, w: 70, h: 75 },
-  // ── Top row (left→right: 25 → 15) ──
-  { id: "25", x: 85,  y: 5,   w: 58, h: 78 },
-  { id: "24", x: 148, y: 5,   w: 58, h: 78 },
-  { id: "23", x: 211, y: 5,   w: 58, h: 78 },
-  { id: "22", x: 274, y: 5,   w: 58, h: 78 },
-  { id: "21", x: 337, y: 5,   w: 58, h: 78 },
-  { id: "20", x: 400, y: 5,   w: 58, h: 78 },
-  { id: "19", x: 463, y: 5,   w: 58, h: 78 },
-  { id: "18", x: 526, y: 5,   w: 58, h: 78 },
-  { id: "17", x: 589, y: 5,   w: 58, h: 78 },
-  { id: "16", x: 652, y: 5,   w: 58, h: 78 },
-  { id: "15", x: 715, y: 5,   w: 58, h: 78 },
-  // top-right corner stalls
-  { id: "14", x: 807, y: 5,   w: 60, h: 78 },
-  { id: "13", x: 872, y: 5,   w: 60, h: 78 },
-  // ── Right column (top→bottom) ──
-  { id: "12", x: 937, y: 5,   w: 58, h: 78 },
-  { id: "11", x: 937, y: 93,  w: 58, h: 120 },
-  { id: "10", x: 937, y: 223, w: 58, h: 120 },
-  // ── Bottom row (left→right: 1 → 9) ──
-  { id: "1",  x: 210, y: 270, w: 66, h: 72 },
-  { id: "2",  x: 281, y: 270, w: 66, h: 72 },
-  { id: "3",  x: 352, y: 270, w: 66, h: 72 },
-  { id: "4",  x: 423, y: 270, w: 66, h: 72 },
-  { id: "5",  x: 494, y: 270, w: 66, h: 72 },
-  { id: "6",  x: 565, y: 270, w: 66, h: 72 },
-  { id: "7",  x: 636, y: 270, w: 66, h: 72 },
-  { id: "8",  x: 707, y: 270, w: 66, h: 72 },
-  { id: "9",  x: 778, y: 270, w: 66, h: 72 },
-  // ── Centre islands (30 31 32 33) ──
-  { id: "30", x: 212, y: 140, w: 88, h: 88 },
-  { id: "31", x: 393, y: 140, w: 88, h: 88 },
-  { id: "32", x: 574, y: 140, w: 88, h: 88 },
-  { id: "33", x: 759, y: 140, w: 88, h: 88 },
+// -- Dimensions --
+const UNIT = 74;          // 3×3 stall width & height
+const TALL = UNIT * 2 + 6; // 3×6 stall height (double + gap)
+const GAP  = 5;           // spacing between stalls
+const PAD  = 8;           // padding from hall edge
+
+// -- Derived anchors --
+const LEFT_COL_X = PAD;
+const LEFT_COL_W = UNIT;
+const TOP_ROW_Y  = PAD;
+const TOP_ROW_H  = UNIT;
+const TOP_ROW_X0 = LEFT_COL_X + LEFT_COL_W + GAP;  // first top-row stall start x_
+
+const RIGHT_COL_X = TOP_ROW_X0 + 13 * (UNIT + GAP); // right of 13 stalls
+const RIGHT_COL_W = UNIT;
+
+const VB_W = RIGHT_COL_X + RIGHT_COL_W + PAD;       // viewBox width
+const BOTTOM_ROW_Y = PAD + TALL + GAP + UNIT + GAP + UNIT + GAP; // below left col last stall
+const VB_H = BOTTOM_ROW_Y + UNIT + PAD + 30;         // viewBox height (+ label room)
+
+const SVG_STALLS: { id: string; x: number; y: number; w: number; h: number }[] = [
+  // ── 26: top-left corner, 3×6 (double height) ──
+  { id: "26", x: LEFT_COL_X, y: TOP_ROW_Y, w: LEFT_COL_W, h: TALL },
+
+  // ── Top row (25 → 13), left to right ──
+  ...Array.from({ length: 13 }, (_, i) => ({
+    id: String(25 - i),
+    x: TOP_ROW_X0 + i * (UNIT + GAP),
+    y: TOP_ROW_Y,
+    w: UNIT,
+    h: TOP_ROW_H,
+  })),
+
+  // ── 12: top-right corner, 3×6 (double height) ──
+  { id: "12", x: RIGHT_COL_X, y: TOP_ROW_Y, w: RIGHT_COL_W, h: TALL },
+
+  // ── Left column below 26 (27, 28, 29) ──
+  { id: "27", x: LEFT_COL_X, y: PAD + TALL + GAP,                   w: LEFT_COL_W, h: UNIT },
+  { id: "28", x: LEFT_COL_X, y: PAD + TALL + GAP + (UNIT + GAP),    w: LEFT_COL_W, h: UNIT },
+  { id: "29", x: LEFT_COL_X, y: PAD + TALL + GAP + 2 * (UNIT + GAP), w: LEFT_COL_W, h: UNIT },
+
+  // ── Right column below 12 (11, 10) ──
+  { id: "11", x: RIGHT_COL_X, y: PAD + TALL + GAP,                w: RIGHT_COL_W, h: UNIT },
+  { id: "10", x: RIGHT_COL_X, y: PAD + TALL + GAP + (UNIT + GAP), w: RIGHT_COL_W, h: UNIT },
+
+  // ── Bottom row (1 → 9) — centred between left col and right col ──
+  ...Array.from({ length: 9 }, (_, i) => {
+    const totalW = 9 * UNIT + 8 * GAP;
+    const startX = TOP_ROW_X0 + ((13 * (UNIT + GAP) - GAP) - totalW) / 2;
+    return {
+      id: String(i + 1),
+      x: startX + i * (UNIT + GAP),
+      y: BOTTOM_ROW_Y,
+      w: UNIT,
+      h: UNIT,
+    };
+  }),
+
+  // ── Centre islands (30 31 32 33) — evenly spaced in the open hall ──
+  ...Array.from({ length: 4 }, (_, i) => {
+    const hallLeft = TOP_ROW_X0;
+    const hallRight = RIGHT_COL_X - GAP;
+    const hallW = hallRight - hallLeft;
+    const islandW = UNIT + 10;
+    const totalIslands = 4 * islandW;
+    const spacing = (hallW - totalIslands) / 5;
+    return {
+      id: String(30 + i),
+      x: hallLeft + spacing + i * (islandW + spacing),
+      y: PAD + TOP_ROW_H + GAP + Math.round((BOTTOM_ROW_Y - (PAD + TOP_ROW_H + GAP) - UNIT) / 2),
+      w: islandW,
+      h: UNIT,
+    };
+  }),
 ];
 
 function FloorMapSVG({
@@ -142,6 +182,11 @@ function FloorMapSVG({
     if (selectedStalls.includes(id)) return { fill: "#C24F1D", text: "#fff", cursor: "pointer" };
     return { fill: "#1d4ed8", text: "#fff", cursor: "pointer" };
   };
+
+  // Bottom-row x positions for Entry / Emergency Exit markers
+  const bottomStalls = SVG_STALLS.filter(s => ["1","9"].includes(s.id));
+  const stall1 = bottomStalls.find(s => s.id === "1")!;
+  const stall9 = bottomStalls.find(s => s.id === "9")!;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -160,32 +205,44 @@ function FloorMapSVG({
       </div>
 
       <svg
-        viewBox="0 0 1000 360"
+        viewBox={`0 0 ${VB_W} ${VB_H}`}
         width="100%"
         style={{ minWidth: 480, maxWidth: "100%", display: "block" }}
         xmlns="http://www.w3.org/2000/svg"
       >
         {/* Background */}
-        <rect x="0" y="0" width="1000" height="360" fill="#f8fafc" rx="8" />
+        <rect x="0" y="0" width={VB_W} height={VB_H} fill="#f8fafc" rx="8" />
 
         {/* Hall outline */}
-        <rect x="2" y="2" width="996" height="356" fill="none" stroke="#cbd5e1" strokeWidth="2" rx="6" />
+        <rect x="2" y="2" width={VB_W - 4} height={VB_H - 4} fill="none" stroke="#cbd5e1" strokeWidth="2" rx="6" />
 
         {/* Stall Size label */}
-        <text x="500" y="125" textAnchor="middle" fontSize="15" fontWeight="700" fill="#334155">
+        <text x={VB_W / 2} y={PAD + TOP_ROW_H + GAP + 18} textAnchor="middle" fontSize="16" fontWeight="700" fill="#334155">
           Stall Size: 3×3 Mtr.
         </text>
 
-        {/* Entry marker */}
-        <polygon points="148,340 165,320 181,340" fill="#dc2626" />
-        <text x="163" y="358" textAnchor="middle" fontSize="11" fontWeight="700" fill="#dc2626">Entry</text>
+        {/* Entry marker — left of stall 1 */}
+        <polygon
+          points={`${stall1.x - 30},${stall1.y + stall1.h} ${stall1.x - 18},${stall1.y + stall1.h - 18} ${stall1.x - 6},${stall1.y + stall1.h}`}
+          fill="#dc2626"
+        />
+        <text
+          x={stall1.x - 18} y={stall1.y + stall1.h + 16}
+          textAnchor="middle" fontSize="13" fontWeight="700" fill="#dc2626"
+        >Entry</text>
 
-        {/* Emergency exit marker */}
-        <polygon points="852,340 869,320 886,340" fill="#dc2626" />
-        <text x="869" y="358" textAnchor="middle" fontSize="10" fontWeight="700" fill="#dc2626">Emergency Exit</text>
+        {/* Emergency Exit marker — right of stall 9 */}
+        <polygon
+          points={`${stall9.x + stall9.w + 12},${stall9.y + stall9.h / 2 - 10} ${stall9.x + stall9.w + 28},${stall9.y + stall9.h / 2} ${stall9.x + stall9.w + 12},${stall9.y + stall9.h / 2 + 10}`}
+          fill="#dc2626"
+        />
+        <text
+          x={stall9.x + stall9.w + 20} y={stall9.y + stall9.h / 2 + 24}
+          textAnchor="middle" fontSize="11" fontWeight="700" fill="#dc2626"
+        >Emergency Exit</text>
 
         {/* Floor Map title */}
-        <text x="500" y="350" textAnchor="middle" fontSize="12" fontWeight="600" fill="#94a3b8">
+        <text x={VB_W / 2} y={VB_H - 6} textAnchor="middle" fontSize="14" fontWeight="600" fill="#94a3b8">
           Floor Map — Defence Expo
         </text>
 
@@ -194,6 +251,7 @@ function FloorMapSVG({
           const s = fillOf(id);
           const isBooked = booked.includes(id);
           const isSelected = selectedStalls.includes(id);
+          const fontSize = (id === "26" || id === "12") ? 16 : 14;
           return (
             <g
               key={id}
@@ -217,7 +275,7 @@ function FloorMapSVG({
               <text
                 x={x + w / 2} y={y + h / 2 + 1}
                 textAnchor="middle" dominantBaseline="middle"
-                fontSize="13" fontWeight="700" fill={s.text}
+                fontSize={fontSize} fontWeight="700" fill={s.text}
                 style={{ pointerEvents: "none", userSelect: "none" }}
               >
                 {id}
