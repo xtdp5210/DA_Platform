@@ -354,6 +354,16 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
         </button>
       </div>
 
+      {/* Announcement Banner */}
+      <div className="w-full bg-green-600 py-6 px-6 text-center">
+        <p className="text-white text-2xl sm:text-3xl font-extrabold tracking-wide leading-snug">
+          🎉 All Stalls Are Available!
+        </p>
+        <p className="text-green-100 text-base sm:text-lg font-semibold mt-2">
+          Registration process will begin shortly — stay with us!
+        </p>
+      </div>
+
       <div className="flex-1 w-full max-w-5xl mx-auto px-4 py-10">
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-10">
