@@ -29,8 +29,17 @@ class ExhibitorRegistrationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['approval_status', 'payment_status', 'created_at']
 
+    MAX_STALLS_PER_USER = 2
+
     def create(self, validated_data):
         user = self.context['request'].user
+
+        # Enforce maximum stall limit per user
+        existing_count = ExhibitorRegistration.objects.filter(user=user).count()
+        if existing_count >= self.MAX_STALLS_PER_USER:
+            raise serializers.ValidationError(
+                {'stall_id': f'You can register for a maximum of {self.MAX_STALLS_PER_USER} stalls.'}
+            )
 
         # Use atomic + select_for_update to eliminate the race condition where
         # two concurrent requests could both pass the "available" queryset check

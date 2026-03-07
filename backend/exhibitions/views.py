@@ -41,4 +41,9 @@ class MyBookingsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ExhibitorRegistration.objects.filter(user=self.request.user).order_by('-created_at')
+        return (
+            ExhibitorRegistration.objects
+            .filter(user=self.request.user)
+            .select_related('stall')   # avoid N+1 for stall_number/block/price
+            .order_by('-created_at')
+        )

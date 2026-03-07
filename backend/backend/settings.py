@@ -149,6 +149,10 @@ else:
             'PASSWORD': env('DB_PASSWORD'),
             'HOST': env('DB_HOST'),
             'PORT': env('DB_PORT'),
+            # Keep the DB connection alive across requests — avoids a fresh
+            # TCP + TLS handshake to Neon on every single request (~300ms saved).
+            'CONN_MAX_AGE': 600,  # 10 minutes
+            'CONN_HEALTH_CHECKS': True,  # verify conn is alive before reuse
             # Neon requires SSL + channel binding (SCRAM authentication security)
             'OPTIONS': {
                 'sslmode': env('DB_SSLMODE', default='require'),

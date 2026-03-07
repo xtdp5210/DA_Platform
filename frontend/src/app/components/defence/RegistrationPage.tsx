@@ -354,16 +354,25 @@ export default function RegistrationPage({ onBack, onLogin }: { onBack?: () => v
       : [...f.additional_support, item],
   }));
 
+  const MAX_STALLS = 2;
+
   const handleMapSelect = (stallId: string) => {
     const apiStall = apiStalls.find(s => s.stall_number === stallId);
     if (!apiStall || apiStall.status !== "available") return;
     
-    setSelectedStalls((prev) =>
-      prev.find((s) => s.id === apiStall.id)
-        ? prev.filter((s) => s.id !== apiStall.id)
-        : [...prev, apiStall]
-    );
-    setErrors({ ...errors, stallSelection: "" });
+    setSelectedStalls((prev) => {
+      // Already selected → deselect (toggle off)
+      if (prev.find((s) => s.id === apiStall.id)) {
+        return prev.filter((s) => s.id !== apiStall.id);
+      }
+      // At limit → block
+      if (prev.length >= MAX_STALLS) {
+        setErrors({ ...errors, stallSelection: `You can select a maximum of ${MAX_STALLS} stalls.` });
+        return prev;
+      }
+      return [...prev, apiStall];
+    });
+    setErrors((prev) => ({ ...prev, stallSelection: "" }));
   };
 
   const validateStep1 = () => {
