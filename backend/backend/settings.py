@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     'users',
     'exhibitions',
     'payments',
+    'anymail',
 ]
 
 MIDDLEWARE = [
@@ -206,19 +207,19 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 CORS_ALLOW_CREDENTIALS = True
 
 # ── Email ─────────────────────────────────────────────────────────────────────
-# Local dev: print emails to the terminal console so you don't need SendGrid.
-# Production: SendGrid SMTP relay (django-anymail SendGrid backend is deprecated).
+# Local dev: print emails to the terminal console.
+# Production: anymail SendGrid *HTTP API* backend (Render blocks SMTP ports 25/587/465).
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='da@rru.ac.in')
+EMAIL_TIMEOUT = 10  # seconds — prevents worker hangs if email service is slow
 
 if env.bool('USE_SQLITE', default=False):
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.sendgrid.net'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = 'apikey'                              # literal string required by SendGrid
-    EMAIL_HOST_PASSWORD = env('SENDGRID_API_KEY', default='')
+    EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+
+ANYMAIL = {
+    'SENDGRID_API_KEY': env('SENDGRID_API_KEY', default=''),
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
