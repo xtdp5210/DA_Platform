@@ -64,12 +64,14 @@ class MyBookingsSerializer(serializers.ModelSerializer):
     block = serializers.CharField(source='stall.block', read_only=True)
     stall_price = serializers.DecimalField(source='stall.price', max_digits=10, decimal_places=2, read_only=True)
     receipt_url = serializers.SerializerMethodField()
+    payment_deadline = serializers.SerializerMethodField()
 
     class Meta:
         model = ExhibitorRegistration
         fields = [
             'id', 'company_name', 'stall_number', 'block', 'stall_price',
-            'approval_status', 'payment_status', 'created_at', 'receipt_url',
+            'approval_status', 'payment_status', 'created_at',
+            'approved_at', 'payment_deadline', 'receipt_url',
         ]
 
     def get_receipt_url(self, obj):
@@ -77,3 +79,7 @@ class MyBookingsSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             return request.build_absolute_uri(obj.payment_record.receipt_pdf.url)
         return None
+
+    def get_payment_deadline(self, obj):
+        deadline = obj.payment_deadline
+        return deadline.isoformat() if deadline else None

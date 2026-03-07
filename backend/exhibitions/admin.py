@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 from django.utils.html import format_html
+from django.utils import timezone
 from .models import *
 from .email_utils import send_approval_email, send_rejection_email
 
@@ -11,7 +12,8 @@ def approve_registrations(modeladmin, request, queryset):
     updated = 0
     for reg in queryset.exclude(approval_status='approved'):
         reg.approval_status = 'approved'
-        reg.save(update_fields=['approval_status'])
+        reg.approved_at = timezone.now()
+        reg.save(update_fields=['approval_status', 'approved_at'])
         try:
             send_approval_email(reg)
         except Exception as exc:
@@ -87,6 +89,7 @@ class ExhibitorRegistrationAdmin(admin.ModelAdmin):
             'pending_review': ('#b45309', '#FFF7ED', '⏳'),
             'approved':       ('#16a34a', '#F0FDF4', '✅'),
             'rejected':       ('#dc2626', '#FEF2F2', '✗'),
+            'expired':        ('#9333ea', '#FAF5FF', '⏰'),
         }
         colour, bg, icon = colours.get(obj.approval_status, ('#6b7280', '#f9fafb', '?'))
         return format_html(

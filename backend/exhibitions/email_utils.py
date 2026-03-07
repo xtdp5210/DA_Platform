@@ -230,6 +230,13 @@ def send_approval_email(registration) -> None:
     price = registration.stall.price
     to    = list({registration.contact_email, registration.user.email})
 
+    # Compute the human-readable deadline
+    deadline = registration.payment_deadline
+    if deadline:
+        deadline_str = deadline.strftime("%d %B %Y, %I:%M %p") + " IST"
+    else:
+        deadline_str = "24 hours from now"
+
     subject = "Application Approved — Proceed to Payment | Defence Attaché Roundtable 2026"
 
     html = _HEADER + f"""
@@ -303,7 +310,7 @@ def send_approval_email(registration) -> None:
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
               <tr>
                 <td style="border-radius:8px;background:#C24F1D;">
-                  <a href="https://da.rru.ac.in/dashboard"
+                  <a href="https://defenceattache.rru.ac.in/dashboard"
                      style="display:inline-block;padding:14px 32px;font-size:14px;
                             font-weight:700;color:#ffffff;text-decoration:none;
                             letter-spacing:0.5px;">
@@ -316,9 +323,11 @@ def send_approval_email(registration) -> None:
             <div style="background:#FFF7ED;border-left:4px solid #F59E0B;
                         border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0;">
               <p style="margin:0;font-size:13px;color:#92400E;line-height:1.6;">
-                <strong>Important:</strong> Please complete the payment at the earliest to 
-                secure your stall allocation. Approved stalls that remain unpaid may be 
-                reassigned after the payment deadline.
+                <strong>⚠️ Important — 24-Hour Payment Deadline:</strong><br />
+                You must complete the payment by <strong>{deadline_str}</strong>.
+                If payment is not received within 24 hours of approval, your stall
+                allocation will be <strong>automatically released</strong> and made
+                available to other exhibitors.
               </p>
             </div>
 
@@ -339,8 +348,9 @@ def send_approval_email(registration) -> None:
         f"We are pleased to inform you that the application of {co} has been APPROVED.\n\n"
         f"Stall: {stall} — Block {block}\nAmount Payable: Rs. {price}\n\n"
         "Please log in to your Exhibitor Portal to complete the payment:\n"
-        "https://da.rru.ac.in/dashboard\n\n"
-        "Important: Please complete payment promptly to secure your stall.\n\n"
+        "https://defenceattache.rru.ac.in/dashboard\n\n"
+        f"IMPORTANT: You must complete payment by {deadline_str}.\n"
+        "If payment is not received within 24 hours, your stall will be automatically released.\n\n"
         "Regards,\nOrganising Secretariat\nDefence Attaché Roundtable 2026\nRashtriya Raksha University"
     )
 
@@ -556,6 +566,129 @@ def send_payment_confirmed_email(registration, receipt_url: str = "") -> None:
         f"Company: {co}\nAmount Paid: Rs. {price}\n\n"
         "Please find your payment receipt attached.\n\n"
         "Further details about the event will be communicated separately.\n\n"
+        "Regards,\nOrganising Secretariat\nDefence Attaché Roundtable 2026\nRashtriya Raksha University"
+    )
+
+    _send(subject, to, html, plain)
+
+
+# ── 5. Payment Deadline Expired ──────────────────────────────────────────────
+def send_deadline_expired_email(registration) -> None:
+    """Sent when the 24-hour payment window elapses and the stall is released."""
+    rep   = registration.representative_name
+    co    = registration.company_name
+    stall = registration.stall.stall_number
+    block = registration.stall.block
+    to    = list({registration.contact_email, registration.user.email})
+
+    subject = "Stall Allocation Released — Payment Deadline Missed | Defence Attaché Roundtable 2026"
+
+    html = _HEADER + f"""
+        <!-- STATUS BADGE -->
+        <tr>
+          <td style="background:#FEF2F2;padding:18px 36px 0;text-align:center;">
+            <span style="display:inline-block;background:#dc2626;color:#fff;
+                         font-size:11px;font-weight:700;letter-spacing:2px;
+                         text-transform:uppercase;padding:6px 18px;
+                         border-radius:20px;">
+              ⏰ Payment Deadline Expired
+            </span>
+          </td>
+        </tr>
+
+        <!-- BODY -->
+        <tr>
+          <td style="padding:32px 36px 28px;">
+            <p style="margin:0 0 18px;font-size:16px;color:#0A1628;font-weight:700;">
+              Dear {rep},
+            </p>
+            <p style="margin:0 0 16px;font-size:14px;color:#444;line-height:1.7;">
+              We regret to inform you that the stall allocated to <strong>{co}</strong>
+              for the <strong>Defence Attaché Roundtable 2026</strong> has been
+              <strong style="color:#dc2626;">automatically released</strong> because
+              payment was not received within the <strong>24-hour deadline</strong>.
+            </p>
+
+            <!-- SUMMARY CARD -->
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                   style="background:#FEF2F2;border:1px solid #fecaca;border-radius:8px;
+                          margin:20px 0;">
+              <tr>
+                <td style="padding:20px 24px;">
+                  <div style="font-size:11px;color:#991B1B;font-weight:700;letter-spacing:2px;
+                               text-transform:uppercase;margin-bottom:14px;">
+                    Released Stall Details
+                  </div>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                    <tr>
+                      <td style="font-size:13px;color:#555;padding:5px 0;width:45%;">Company</td>
+                      <td style="font-size:13px;color:#0A1628;font-weight:600;padding:5px 0;">{co}</td>
+                    </tr>
+                    <tr>
+                      <td style="font-size:13px;color:#555;padding:5px 0;">Stall Released</td>
+                      <td style="font-size:13px;color:#0A1628;font-weight:600;padding:5px 0;">
+                        Stall {stall} — Block {block}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="font-size:13px;color:#555;padding:5px 0;">Status</td>
+                      <td style="font-size:13px;color:#dc2626;font-weight:700;padding:5px 0;">
+                        ❌ Released — Deadline Missed
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <div style="background:#FFF7ED;border-left:4px solid #F59E0B;
+                        border-radius:0 8px 8px 0;padding:14px 18px;margin:20px 0;">
+              <p style="margin:0;font-size:13px;color:#92400E;line-height:1.6;">
+                <strong>Want to rebook?</strong> You can register for another available
+                stall through your Exhibitor Portal. Subject to availability and
+                re-approval by our team.
+              </p>
+            </div>
+
+            <!-- CTA -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
+              <tr>
+                <td style="border-radius:8px;background:#C24F1D;">
+                  <a href="https://defenceattache.rru.ac.in/registerevent"
+                     style="display:inline-block;padding:14px 32px;font-size:14px;
+                            font-weight:700;color:#ffffff;text-decoration:none;
+                            letter-spacing:0.5px;">
+                    Browse Available Stalls →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:20px 0 0;font-size:14px;color:#444;line-height:1.7;">
+              For any queries, please write to
+              <a href="mailto:da@rru.ac.in" style="color:#C24F1D;font-weight:600;">da@rru.ac.in</a>.
+            </p>
+
+            <p style="margin:20px 0 0;font-size:14px;color:#0A1628;font-weight:700;">
+              Warm regards,<br />
+              <span style="font-weight:400;color:#555;font-size:13px;">
+                Organising Secretariat<br />
+                Defence Attaché Roundtable 2026<br />
+                Rashtriya Raksha University
+              </span>
+            </p>
+          </td>
+        </tr>
+    """ + _FOOTER
+
+    plain = (
+        f"Dear {rep},\n\n"
+        f"We regret to inform you that the stall (Stall {stall} — Block {block}) "
+        f"allocated to {co} has been automatically released because payment was not "
+        "received within the 24-hour deadline.\n\n"
+        "You may register for another available stall at:\n"
+        "https://defenceattache.rru.ac.in/registerevent\n\n"
+        "For queries, contact: da@rru.ac.in\n\n"
         "Regards,\nOrganising Secretariat\nDefence Attaché Roundtable 2026\nRashtriya Raksha University"
     )
 

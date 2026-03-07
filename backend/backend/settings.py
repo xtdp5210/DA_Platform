@@ -307,10 +307,18 @@ CONTENT_SECURITY_POLICY = (
 # django-axes (Brute-Force Protection)
 # ---------------------------------------------------------------------------
 AXES_FAILURE_LIMIT = 5                    # Lock after 5 failed attempts
-AXES_COOLOFF_TIME = timedelta(hours=1)    # Lockout lasts 1 hour (must be timedelta)
+AXES_COOLOFF_TIME = timedelta(minutes=15) # Lockout lasts 15 min (was 1 hour)
 AXES_LOCKOUT_CALLABLE = None              # Use default 403 response
-AXES_RESET_ON_SUCCESS = True     # Clear failure count on successful login
+AXES_RESET_ON_SUCCESS = True              # Clear failure count on successful login
 AXES_ENABLE_ADMIN = True
+AXES_LOCK_OUT_AT_FAILURE = True
+# On Render all requests arrive from 127.0.0.1 (reverse proxy).
+# Lock only by username so one bad actor doesn't lock out every user.
+AXES_LOCKOUT_PARAMETERS = ['username']
+AXES_META_PRECEDENCE_ORDER = [
+    'HTTP_X_FORWARDED_FOR',   # real client IP behind Render proxy
+    'REMOTE_ADDR',
+]
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesStandaloneBackend',  # Must be first
     'django.contrib.auth.backends.ModelBackend',

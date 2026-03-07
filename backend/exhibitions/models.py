@@ -38,6 +38,7 @@ class ExhibitorRegistration(models.Model):
         ('pending_review', 'Pending Review'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('expired', 'Expired — Payment Deadline Missed'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exhibition_bookings')
@@ -67,7 +68,29 @@ class ExhibitorRegistration(models.Model):
     rejection_reason = models.TextField(blank=True, null=True, help_text="Reason for rejection (visible in email to company)")
 
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='unpaid')
+    approved_at = models.DateTimeField(null=True, blank=True, help_text="Set automatically when admin approves. Payment deadline = approved_at + 24 h.")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    PAYMENT_DEADLINE_HOURS = 24
+
+    @property
+    def payment_deadline(self):
+        """Return the datetime by which payment must be completed, or None."""
+        if self.approved_at:
+            from datetime import timedelta
+            return self.approved_at + timedelta(hours=self.PAYMENT_DEADLINE_HOURS)
+        return None
+
+    @property
+    def is_payment_expired(self):
+        """True if approved but unpaid and past the 24-hour deadline."""
+        from django.utils import timezone
+        deadline = self.payment_deadline
+        return (
+            deadline is not None
+            and self.payment_status == 'unpaid'
+            and timezone.now() > deadline
+        )
 
     def __str__(self):
         return f"{self.company_name} - {self.stall.stall_number}"
